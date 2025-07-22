@@ -90,7 +90,7 @@ public class IntrospectionEndpoint extends BaseIntrospectionEndpoint
         Params params = buildParams(parameters, accept, rsEntity);
 
         // Handle the introspection request.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis((authleteApi -> handle(authleteApi, params)), (res, map) -> {
+        return AuthleteApiHolder.getInstance().withApi((authleteApi -> handle(authleteApi, params)), (res, map) -> {
             if (res.getStatus() != Status.OK.getStatusCode())
             {
                 return true;

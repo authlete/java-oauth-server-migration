@@ -24,8 +24,7 @@ import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
+
 import com.authlete.common.dto.IntrospectionResponse;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
 import com.authlete.jaxrs.server.obb.model.AccountData;
@@ -53,7 +52,7 @@ public class AccountsEndpoint
                 ObbUtils.computeOutgoingInteractionId(code, incomingInteractionId);
 
         // Validate the access token.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             IntrospectionResponse info = ObbUtils.validateAccessToken(
                     outgoingInteractionId, code, authleteApi, request, "accounts");
 

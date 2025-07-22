@@ -21,8 +21,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
-import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
+
 import com.authlete.common.dto.ServiceConfigurationRequest;
 import com.authlete.jaxrs.BaseConfigurationEndpoint;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
@@ -117,11 +116,11 @@ public class ConfigurationEndpoint extends BaseConfigurationEndpoint
         {
             // Call the /service/configuration API with HTTP POST,
             // which is supported since Authlete 2.2.36.
-            return AuthleteApiHolder.getInstance().tryWithAuthleteApis(CallerStrategy.ONLY_V3, ResponseReturnStrategy.V3_RESPONSE, authleteApi -> handle(authleteApi, createRequest(pretty, patch)));
+            return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, authleteApi -> handle(authleteApi, createRequest(pretty, patch)));
         }
 
         // Call the /service/configuration API with HTTP GET.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(this::handle);
+        return AuthleteApiHolder.getInstance().withApi(this::handle);
     }
 
 

@@ -27,7 +27,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import com.authlete.common.api.AuthleteApiFactory;
+
 import com.authlete.common.dto.BackchannelAuthenticationCompleteRequest.Result;
 import com.authlete.common.types.User;
 import com.authlete.jaxrs.BackchannelAuthenticationCompleteRequestHandler;
@@ -106,7 +106,7 @@ public class BackchannelAuthenticationCallbackEndpoint
         String errorDescription = determineErrorDescription(request);
 
         // Complete the authentication and authorization process.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             new BackchannelAuthenticationCompleteRequestHandler(
                     authleteApi,
                     new BackchannelAuthenticationCompleteHandlerSpiImpl(

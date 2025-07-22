@@ -20,7 +20,7 @@ package com.authlete.jaxrs.server.api;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
-import com.authlete.common.api.AuthleteApiFactory;
+
 import com.authlete.jaxrs.BaseJwksEndpoint;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
 import com.authlete.jaxrs.server.CallerStrategy;
@@ -63,6 +63,6 @@ public class JwksEndpoint extends BaseJwksEndpoint
     public Response get()
     {
         // Handle the JWK Set request.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(CallerStrategy.ONLY_V3, ResponseReturnStrategy.V3_RESPONSE, (this::handle));
+        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, (this::handle));
     }
 }

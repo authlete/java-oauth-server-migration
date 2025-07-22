@@ -11,14 +11,10 @@ import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.ServerErrorException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -32,21 +28,31 @@ public class AuthleteApiHolder
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final AuthleteApi authleteApiv23;
-    private final AuthleteApi authleteApiv3;
+    /**
+     * The secondary Authlete API, if both are configured, this should be connected to the Authlete 2.3 server.
+     */
+    private final AuthleteApi secondaryAuthleteApi;
+
+    /**
+     * The primary Authlete Api, if both are configured, this should be connected to the Authlete 3 server.
+     */
+    private final AuthleteApi primaryAuthleteApi;
 
     private static final AuthleteApiHolder INSTANCE = new AuthleteApiHolder();
 
     private AuthleteApiHolder()
     {
         AuthleteConfiguration initialConfiguration = new AuthletePropertiesConfiguration();
-        authleteApiv3 = AuthleteApiFactory.create(initialConfiguration);
+        primaryAuthleteApi = AuthleteApiFactory.create(initialConfiguration);
+        logger.info("Initializing configuration for Authlete Api with version [{}]", initialConfiguration.getApiVersion());
 
         // If V3 is specified and also properties for V2 are provided, we will attempt to create a configuration for
         // and connect to both configured Authlete API servers
         if (AuthleteApiVersion.V3.name().equalsIgnoreCase(initialConfiguration.getApiVersion())
                 && initialConfiguration.getServiceApiSecret() != null && !initialConfiguration.getServiceApiSecret().isEmpty())
         {
+            logger.info("Api Version set to [{}] but [{}] supported properties have also been provided. Initializing configuration with both Authlete 2.3 and Authlete 3.",
+                    initialConfiguration.getApiVersion(), AuthleteApiVersion.V2);
             AuthleteConfiguration v2Configuration = new AuthleteSimpleConfiguration()
                     .setBaseUrl(System.getProperty(V2_BASE_URL, initialConfiguration.getBaseUrl()))
                     .setApiVersion(AuthleteApiVersion.V2.name())
@@ -57,11 +63,11 @@ public class AuthleteApiHolder
                     .setDpopKey(initialConfiguration.getDpopKey())
                     .setClientCertificate(initialConfiguration.getClientCertificate());
 
-            authleteApiv23 = AuthleteApiFactory.create(v2Configuration);
+            secondaryAuthleteApi = AuthleteApiFactory.create(v2Configuration);
         }
         else
         {
-            authleteApiv23 = null;
+            secondaryAuthleteApi = null;
         }
     }
 
@@ -70,124 +76,124 @@ public class AuthleteApiHolder
         return INSTANCE;
     }
 
-    public Response tryWithAuthleteApis(Function<AuthleteApi, Response> function, BiFunction<Response, Map<String, Object>, Boolean> isErrorFunction)
+    public Response withApi(Function<AuthleteApi, Response> function, BiFunction<Response, Map<String, Object>, Boolean> isErrorFunction)
     {
-        return tryWithAuthleteApis(CallerStrategy.UNTIL_SUCCESS, ResponseReturnStrategy.FIRST_NON_ERROR_RESPONSE, function, isErrorFunction);
+        return withApi(CallerStrategy.UNTIL_SUCCESS, ResponseReturnStrategy.FIRST_NON_ERROR_RESPONSE, function, isErrorFunction);
     }
 
-    public Response tryWithAuthleteApis(Function<AuthleteApi, Response> function)
+    public Response withApi(Function<AuthleteApi, Response> function)
     {
-        return tryWithAuthleteApis(ResponseReturnStrategy.FIRST_NON_ERROR_RESPONSE, function);
+        return withApi(ResponseReturnStrategy.FIRST_NON_ERROR_RESPONSE, function);
     }
 
-    public Response tryWithAuthleteApis(ResponseReturnStrategy strategy, Function<AuthleteApi, Response> function)
+    public Response withApi(ResponseReturnStrategy strategy, Function<AuthleteApi, Response> function)
     {
-        return tryWithAuthleteApis(CallerStrategy.UNTIL_SUCCESS, strategy, function);
+        return withApi(CallerStrategy.UNTIL_SUCCESS, strategy, function);
     }
 
-    public Response tryWithAuthleteApis(CallerStrategy callerStrategy, ResponseReturnStrategy strategy, Function<AuthleteApi, Response> function)
+    public Response withApi(CallerStrategy callerStrategy, ResponseReturnStrategy strategy, Function<AuthleteApi, Response> function)
     {
-        return tryWithAuthleteApis(callerStrategy, strategy, function,
+        return withApi(callerStrategy, strategy, function,
                 // Default error function filters out by HTTP error response code
                 (res, body) -> res.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode());
     }
 
-    public Response tryWithAuthleteApis(CallerStrategy callerStrategy, ResponseReturnStrategy strategy, Function<AuthleteApi, Response> function, BiFunction<Response, Map<String, Object>, Boolean> isErrorFunction)
+    public Response withApi(CallerStrategy callerStrategy, ResponseReturnStrategy strategy, Function<AuthleteApi, Response> function, BiFunction<Response, Map<String, Object>, Boolean> isErrorFunction)
     {
-        Response v30Response = null;
+        Response primaryResponse = null;
         try
         {
-            v30Response = function.apply(authleteApiv3);
+            primaryResponse = function.apply(primaryAuthleteApi);
         }
         catch (WebApplicationException t)
         {
-            v30Response = t.getResponse();
+            primaryResponse = t.getResponse();
         }
-        boolean v3IsError = v30Response == null || isErrorFunction.apply(v30Response, getResponseAsMap(v30Response));
-        if (callerStrategy == CallerStrategy.ONLY_V3
-            || (callerStrategy == CallerStrategy.UNTIL_SUCCESS && !v3IsError))
+        boolean primaryIsError = primaryResponse == null || isErrorFunction.apply(primaryResponse, getResponseAsMap(primaryResponse));
+        if (callerStrategy == CallerStrategy.ONLY_PRIMARY
+            || (callerStrategy == CallerStrategy.UNTIL_SUCCESS && !primaryIsError))
         {
-            return v30Response;
+            return primaryResponse;
         }
 
-        Response v23Response;
+        Response secondaryResponse;
         try
         {
-            v23Response = function.apply(authleteApiv23);
+            secondaryResponse = function.apply(secondaryAuthleteApi);
         }
         catch (WebApplicationException t)
         {
-            v23Response = t.getResponse();
+            secondaryResponse = t.getResponse();
         }
-        boolean v2IsError = isErrorFunction.apply(v23Response, getResponseAsMap(v23Response));
+        boolean secondaryIsError = isErrorFunction.apply(secondaryResponse, getResponseAsMap(secondaryResponse));
 
-        // We won't check for ResponseReturnStrategy.V3_RESPONSE since returning v3 response is the default fall through case
+        // We won't check for ResponseReturnStrategy.PRIMARY since returning v3 response is the default fall through case
 
-        if (strategy == ResponseReturnStrategy.V2_RESPONSE)
+        if (strategy == ResponseReturnStrategy.SECONDARY)
         {
-            return v23Response;
+            return secondaryResponse;
         }
         else if (strategy == ResponseReturnStrategy.FIRST_NON_ERROR_RESPONSE)
         {
-            if (!v3IsError)
+            if (!primaryIsError)
             {
-                return v30Response;
+                return primaryResponse;
             }
-            else if (!v2IsError)
+            else if (!secondaryIsError)
             {
-                return v23Response;
+                return secondaryResponse;
             }
         }
         else if (strategy == ResponseReturnStrategy.LAST_NON_ERROR_RESPONSE)
         {
-            if (!v2IsError)
+            if (!secondaryIsError)
             {
-                return v23Response;
+                return secondaryResponse;
             }
-            else if (!v3IsError)
+            else if (!primaryIsError)
             {
-                return v30Response;
-            }
-        }
-        else if (strategy == ResponseReturnStrategy.BOTH_ERROR_THEN_V2)
-        {
-            if (v3IsError && v2IsError)
-            {
-                return v23Response;
+                return primaryResponse;
             }
         }
-        else if (strategy == ResponseReturnStrategy.BOTH_ERROR_THEN_V3)
+        else if (strategy == ResponseReturnStrategy.BOTH_ERROR_THEN_SECONDARY)
         {
-            if (v3IsError && v2IsError)
+            if (primaryIsError && secondaryIsError)
             {
-                return v30Response;
+                return secondaryResponse;
+            }
+        }
+        else if (strategy == ResponseReturnStrategy.BOTH_ERROR_THEN_PRIMARY)
+        {
+            if (primaryIsError && secondaryIsError)
+            {
+                return primaryResponse;
             }
         }
         else if (strategy == ResponseReturnStrategy.ONE_ERROR_THAN_ERROR)
         {
-            if (v3IsError && !v2IsError)
+            if (primaryIsError && !secondaryIsError)
             {
-                return v30Response;
+                return primaryResponse;
             }
-            else if (!v3IsError && v2IsError)
+            else if (!primaryIsError && secondaryIsError)
             {
-                return v23Response;
+                return secondaryResponse;
             }
         }
         else if (strategy == ResponseReturnStrategy.ONE_ERROR_THAN_SUCCESS)
         {
-            if (v3IsError && !v2IsError)
+            if (primaryIsError && !secondaryIsError)
             {
-                return v23Response;
+                return secondaryResponse;
             }
-            else if (!v3IsError && v2IsError)
+            else if (!primaryIsError && secondaryIsError)
             {
-                return v30Response;
+                return primaryResponse;
             }
         }
 
         // Always return v3 response by default
-        return v30Response;
+        return primaryResponse;
     }
 
     private static final Gson gson = new Gson();
@@ -203,7 +209,7 @@ public class AuthleteApiHolder
         }
         catch (Throwable t)
         {
-            // If we fail to parse its probably a html response not json
+            // If we fail to parse its probably a html response not json to fall through and return an empty map
         }
         return new HashMap<>();
     }

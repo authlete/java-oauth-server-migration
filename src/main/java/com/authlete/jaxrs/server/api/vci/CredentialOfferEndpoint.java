@@ -21,7 +21,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
-import com.authlete.common.api.AuthleteApiFactory;
+
 import com.authlete.common.dto.CredentialOfferInfoRequest;
 import com.authlete.jaxrs.BaseCredentialOfferUriEndpoint;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
@@ -34,6 +34,6 @@ public class CredentialOfferEndpoint extends BaseCredentialOfferUriEndpoint
     public Response get(
             @PathParam("identifier") String identifier)
     {
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> handle(authleteApi, new CredentialOfferInfoRequest().setIdentifier(identifier)));
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> handle(authleteApi, new CredentialOfferInfoRequest().setIdentifier(identifier)));
     }
 }

@@ -14,14 +14,14 @@ public enum CallerStrategy {
     CALL_BOTH,
 
     /**
-     * Calls only authlete 3 endpoint and returns its response. This is generally used on endpoints that are
-     * for authlete 3 features only.
+     * Calls only the primary Api (authlete 3 endpoint) and returns its response. This is generally used on endpoints
+     * that are for authlete 3 features only.
      */
-    ONLY_V3,
+    ONLY_PRIMARY,
 
     /**
-     * Calls authlete 3 server first and can return early if it is successful, otherwise
-     * will fall back and request from authlete 2.3 server. This is the default used for almost all endpoint calls.
+     * Calls the primary configured authlete server first and can return early if it is successful, otherwise
+     * will fall back and request from the secondary server. This is the default used for almost all endpoint calls.
      */
     UNTIL_SUCCESS
 }

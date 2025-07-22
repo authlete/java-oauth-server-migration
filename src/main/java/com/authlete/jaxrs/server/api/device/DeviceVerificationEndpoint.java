@@ -34,7 +34,6 @@ import javax.ws.rs.core.UriInfo;
 
 import com.authlete.jaxrs.server.AuthleteApiHolder;
 import org.glassfish.jersey.server.mvc.Viewable;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.types.User;
 import com.authlete.jaxrs.BaseDeviceVerificationEndpoint;
 import com.authlete.jaxrs.DeviceVerificationPageModel;
@@ -176,7 +175,7 @@ public class DeviceVerificationEndpoint extends BaseDeviceVerificationEndpoint
      */
     private Response handle(HttpSession session, String userCode)
     {
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> handle(authleteApi,
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> handle(authleteApi,
                 new DeviceVerificationRequestHandlerSpiImpl(session, userCode)));
     }
 }

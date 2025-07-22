@@ -21,7 +21,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import com.authlete.common.api.AuthleteApiFactory;
+
 import com.authlete.common.dto.Scope;
 import com.authlete.common.dto.BackchannelAuthenticationCompleteRequest.Result;
 import com.authlete.common.types.User;
@@ -296,7 +296,7 @@ public abstract class BaseAuthenticationDeviceProcessor implements Authenticatio
      */
     protected void complete(Result result, Date authTime, String errorDescription, URI errorUri)
     {
-        AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+        AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             new BackchannelAuthenticationCompleteRequestHandler(
                     authleteApi,
                     new BackchannelAuthenticationCompleteHandlerSpiImpl(

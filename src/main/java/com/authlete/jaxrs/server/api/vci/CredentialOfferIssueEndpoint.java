@@ -31,8 +31,6 @@ import javax.ws.rs.core.Response;
 
 import com.authlete.jaxrs.server.AuthleteApiHolder;
 import org.glassfish.jersey.server.mvc.Viewable;
-import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.CredentialOfferCreateRequest;
 import com.authlete.common.dto.CredentialOfferCreateResponse;
 import com.authlete.common.types.User;
@@ -78,7 +76,7 @@ public class CredentialOfferIssueEndpoint extends BaseEndpoint
 
         final CredentialOfferCreateRequest createRequest = model.toRequest(user);
 
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             final CredentialOfferCreateResponse response = authleteApi.credentialOfferCreate(createRequest);
 
             switch (response.getAction())

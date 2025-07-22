@@ -26,7 +26,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import com.authlete.common.api.AuthleteApiFactory;
+
 import com.authlete.jaxrs.BaseUserInfoEndpoint;
 import com.authlete.jaxrs.UserInfoRequestHandler.Params;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
@@ -125,7 +125,7 @@ public class UserInfoEndpoint extends BaseUserInfoEndpoint
     {
         Params params = buildParams(request, body, accessToken, dpop);
 
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis((authleteApi -> handle(authleteApi, new UserInfoRequestHandlerSpiImpl(), params)));
+        return AuthleteApiHolder.getInstance().withApi((authleteApi -> handle(authleteApi, new UserInfoRequestHandlerSpiImpl(), params)));
     }
 
 

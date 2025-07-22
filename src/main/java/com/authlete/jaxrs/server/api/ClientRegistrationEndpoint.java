@@ -34,7 +34,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.util.Utils;
 import com.authlete.jaxrs.BaseClientRegistrationEndpoint;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
@@ -74,7 +73,7 @@ public class ClientRegistrationEndpoint extends BaseClientRegistrationEndpoint
             @Context HttpServletRequest httpServletRequest)
     {
         // The interface of Authlete APIs.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(CallerStrategy.ONLY_V3, ResponseReturnStrategy.V3_RESPONSE, authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, authleteApi -> {
             // Pre-process the request body as necessary.
             String jsonResponse = preprocessRequestBody(httpServletRequest, json);
 
@@ -95,7 +94,7 @@ public class ClientRegistrationEndpoint extends BaseClientRegistrationEndpoint
             @Context HttpServletRequest httpServletRequest)
     {
         // The interface of Authlete APIs.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             // Extra process before executing the "read" operation.
             preprocessClient(httpServletRequest, authleteApi, clientId);
 
@@ -118,7 +117,7 @@ public class ClientRegistrationEndpoint extends BaseClientRegistrationEndpoint
             @Context HttpServletRequest httpServletRequest)
     {
         // The interface of Authlete APIs.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             // Pre-process the request body as necessary.
             String jsonResponse = preprocessRequestBody(httpServletRequest, json);
 
@@ -139,7 +138,7 @@ public class ClientRegistrationEndpoint extends BaseClientRegistrationEndpoint
             @Context HttpServletRequest httpServletRequest)
     {
         // The interface of Authlete APIs.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             // Extra process before executing the "delete" operation.
             preprocessClient(httpServletRequest, authleteApi, clientId);
 

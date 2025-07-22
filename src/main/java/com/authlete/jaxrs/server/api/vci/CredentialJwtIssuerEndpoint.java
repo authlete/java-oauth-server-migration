@@ -22,7 +22,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.CredentialJwtIssuerMetadataRequest;
 import com.authlete.common.dto.CredentialJwtIssuerMetadataResponse;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
@@ -35,7 +34,7 @@ public class CredentialJwtIssuerEndpoint extends AbstractCredentialEndpoint
     @GET
     public Response get()
     {
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(this::metadata);
+        return AuthleteApiHolder.getInstance().withApi(this::metadata);
     }
 
 

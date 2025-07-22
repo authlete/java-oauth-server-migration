@@ -31,7 +31,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.api.AuthleteApiException;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.IntrospectionResponse;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
 import com.authlete.jaxrs.server.obb.database.ConsentDao;
@@ -61,7 +60,7 @@ public class ConsentsEndpoint
                 ObbUtils.computeOutgoingInteractionId(code, incomingInteractionId);
 
         // Validate the access token.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis((authleteApi ->{
+        return AuthleteApiHolder.getInstance().withApi((authleteApi ->{
             IntrospectionResponse info = ObbUtils.validateAccessToken(
                     outgoingInteractionId, code, authleteApi, request, "consents");
 
@@ -96,7 +95,7 @@ public class ConsentsEndpoint
                 ObbUtils.computeOutgoingInteractionId(code, incomingInteractionId);
 
         // Validate the access token.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             IntrospectionResponse info = ObbUtils.validateAccessToken(
                     outgoingInteractionId, code, authleteApi, request, "consents");
 
@@ -129,7 +128,7 @@ public class ConsentsEndpoint
                 ObbUtils.computeOutgoingInteractionId(code, incomingInteractionId);
 
         // Validate the access token.
-        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             IntrospectionResponse info = ObbUtils.validateAccessToken(
                     outgoingInteractionId, code, authleteApi, request, "consents");
 
