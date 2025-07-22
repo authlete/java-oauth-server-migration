@@ -32,6 +32,7 @@ import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.util.Utils;
 import com.authlete.jaxrs.BaseTokenEndpoint;
 import com.authlete.jaxrs.TokenRequestHandler.Params;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 import com.authlete.jaxrs.spi.TokenRequestHandlerSpi;
 
 
@@ -80,15 +81,14 @@ public class TokenEndpoint extends BaseTokenEndpoint
             MultivaluedMap<String, String> parameters)
     {
         // Authlete API
-        AuthleteApi authleteApi = AuthleteApiFactory.getDefaultApi();
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            // Process the token request in a standard way.
+            Response response = processTokenRequest(authleteApi, request, parameters);
 
-        // Process the token request in a standard way.
-        Response response = processTokenRequest(authleteApi, request, parameters);
-
-        // Do additional tasks as necessary.
-        doTasks(authleteApi, request, parameters, response);
-
-        return response;
+            // Do additional tasks as necessary.
+            doTasks(authleteApi, request, parameters, response);
+            return response;
+        });
     }
 
 

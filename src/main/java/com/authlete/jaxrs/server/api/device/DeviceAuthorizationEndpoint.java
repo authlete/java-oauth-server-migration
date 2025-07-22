@@ -30,6 +30,7 @@ import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.jaxrs.BaseDeviceAuthorizationEndpoint;
 import com.authlete.jaxrs.DeviceAuthorizationRequestHandler.Params;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 
 
 /**
@@ -54,13 +55,13 @@ public class DeviceAuthorizationEndpoint extends BaseDeviceAuthorizationEndpoint
             MultivaluedMap<String, String> parameters)
     {
         // Authlete API
-        AuthleteApi authleteApi = AuthleteApiFactory.getDefaultApi();
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            // Parameters for Authlete's /device/authorization API
+            Params params = buildParams(request, parameters);
 
-        // Parameters for Authlete's /device/authorization API
-        Params params = buildParams(request, parameters);
-
-        // Handle the device authorization request.
-        return handle(authleteApi, params);
+            // Handle the device authorization request.
+            return handle(authleteApi, params);
+        });
     }
 
 

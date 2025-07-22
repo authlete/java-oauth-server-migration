@@ -31,6 +31,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 import org.glassfish.jersey.server.mvc.Viewable;
 import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.types.User;
@@ -174,7 +176,7 @@ public class DeviceVerificationEndpoint extends BaseDeviceVerificationEndpoint
      */
     private Response handle(HttpSession session, String userCode)
     {
-        return handle(AuthleteApiFactory.getDefaultApi(),
-                new DeviceVerificationRequestHandlerSpiImpl(session, userCode));
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> handle(authleteApi,
+                new DeviceVerificationRequestHandlerSpiImpl(session, userCode)));
     }
 }

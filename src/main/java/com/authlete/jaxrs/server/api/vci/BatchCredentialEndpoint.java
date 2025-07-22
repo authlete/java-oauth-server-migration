@@ -38,6 +38,7 @@ import com.authlete.common.dto.CredentialBatchParseResponse;
 import com.authlete.common.dto.CredentialIssuanceOrder;
 import com.authlete.common.dto.CredentialRequestInfo;
 import com.authlete.common.dto.IntrospectionResponse;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 import com.authlete.jaxrs.server.util.ExceptionUtil;
 import com.authlete.jaxrs.server.util.ResponseUtil;
 
@@ -54,41 +55,41 @@ public class BatchCredentialEndpoint extends AbstractCredentialEndpoint
             @QueryParam("deferred") String deferred,
             String requestContent)
     {
-        final AuthleteApi api = AuthleteApiFactory.getDefaultApi();
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            // Extract the access token from the request.
+            String accessToken = extractAccessToken(authorization, null);
 
-        // Extract the access token from the request.
-        String accessToken = extractAccessToken(authorization, null);
+            // The expected value of the 'htu' claim in the DPoP proof JWT.
+            String htu = computeHtu(authleteApi, dpop, "batch_credential_endpoint");
 
-        // The expected value of the 'htu' claim in the DPoP proof JWT.
-        String htu = computeHtu(api, dpop, "batch_credential_endpoint");
+            // Validate the access token.
+            IntrospectionResponse introspection =
+                    introspect(request, authleteApi, accessToken, dpop, htu);
 
-        // Validate the access token.
-        IntrospectionResponse introspection =
-                introspect(request, api, accessToken, dpop, htu);
+            // The headers that the response from this endpoint should include.
+            Map<String, Object> headers = prepareHeaders(introspection);
 
-        // The headers that the response from this endpoint should include.
-        Map<String, Object> headers = prepareHeaders(introspection);
+            // Parse the batch credential request.
+            CredentialRequestInfo[] infos = parseRequest(
+                    authleteApi, requestContent, accessToken, headers);
 
-        // Parse the batch credential request.
-        CredentialRequestInfo[] infos = parseRequest(
-                api, requestContent, accessToken, headers);
+            // Prepare credential issuance orders.
+            CredentialIssuanceOrder[] orders = prepareOrders(introspection, infos, headers);
 
-        // Prepare credential issuance orders.
-        CredentialIssuanceOrder[] orders = prepareOrders(introspection, infos, headers);
-
-        // Defer the issuance if it is explicitly requested.
-        // Note that the 'deferred' query parameter is not a standardized one.
-        boolean issuanceDeferred = Boolean.parseBoolean(deferred);
-        if (issuanceDeferred)
-        {
-            for (CredentialIssuanceOrder order : orders)
+            // Defer the issuance if it is explicitly requested.
+            // Note that the 'deferred' query parameter is not a standardized one.
+            boolean issuanceDeferred = Boolean.parseBoolean(deferred);
+            if (issuanceDeferred)
             {
-                order.setIssuanceDeferred(issuanceDeferred);
+                for (CredentialIssuanceOrder order : orders)
+                {
+                    order.setIssuanceDeferred(issuanceDeferred);
+                }
             }
-        }
 
-        // Issue credentials and return a batch credential response.
-        return issue(api, orders, accessToken, headers);
+            // Issue credentials and return a batch credential response.
+            return issue(authleteApi, orders, accessToken, headers);
+        });
     }
 
 

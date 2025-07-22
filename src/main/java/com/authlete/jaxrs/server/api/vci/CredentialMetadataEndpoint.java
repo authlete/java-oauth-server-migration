@@ -25,6 +25,7 @@ import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.CredentialIssuerMetadataRequest;
 import com.authlete.common.dto.CredentialIssuerMetadataResponse;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 import com.authlete.jaxrs.server.util.ExceptionUtil;
 import com.authlete.jaxrs.server.util.ResponseUtil;
 
@@ -35,9 +36,7 @@ public class CredentialMetadataEndpoint extends AbstractCredentialEndpoint
     @GET
     public Response get()
     {
-        final AuthleteApi api = AuthleteApiFactory.getDefaultApi();
-
-        return metadata(api);
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(this::metadata);
     }
 
 

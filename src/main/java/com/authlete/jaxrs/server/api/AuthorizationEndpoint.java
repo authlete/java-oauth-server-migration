@@ -29,6 +29,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.jaxrs.BaseAuthorizationEndpoint;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.server.CallerStrategy;
+import com.authlete.jaxrs.server.ResponseReturnStrategy;
 
 
 /**
@@ -104,7 +107,7 @@ public class AuthorizationEndpoint extends BaseAuthorizationEndpoint
      */
     private Response handle(HttpServletRequest request, MultivaluedMap<String, String> parameters)
     {
-        return handle(AuthleteApiFactory.getDefaultApi(),
-                new AuthorizationRequestHandlerSpiImpl(request), parameters);
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis( authleteApi -> handle(authleteApi,
+                new AuthorizationRequestHandlerSpiImpl(request), parameters));
     }
 }

@@ -20,6 +20,8 @@ package com.authlete.jaxrs.server.api.obb;
 import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.IntrospectionResponse;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.server.api.UserInfoRequestHandlerSpiImpl;
 import com.authlete.jaxrs.server.obb.model.AccountData;
 import com.authlete.jaxrs.server.obb.model.Links;
 import com.authlete.jaxrs.server.obb.model.Meta;
@@ -57,18 +59,19 @@ public class FAPI2BaseAccountsEndpoint
                 ObbUtils.computeOutgoingInteractionId(code, incomingInteractionId);
 
         // Validate the access token.
-        AuthleteApi authleteApi = AuthleteApiFactory.getDefaultApi();
-        IntrospectionResponse info = ObbUtils.validateAccessToken(
-                outgoingInteractionId, code, authleteApi, request, "fapi2base-accounts");
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis((authleteApi -> {
+            IntrospectionResponse info = ObbUtils.validateAccessToken(
+                    outgoingInteractionId, code, authleteApi, request, "fapi2base-accounts");
 
-        // Make sure that the access token has a "consent:{consentId}" scope.
-        ensureConsentScope(outgoingInteractionId, code, info);
+            // Make sure that the access token has a "consent:{consentId}" scope.
+            ensureConsentScope(outgoingInteractionId, code, info);
 
-        // Build a response body.
-        ResponseAccountList body = buildResponseBody();
+            // Build a response body.
+            ResponseAccountList body = buildResponseBody();
 
-        // Build a successful response.
-        return ObbUtils.ok(outgoingInteractionId, body);
+            // Build a successful response.
+            return ObbUtils.ok(outgoingInteractionId, body);
+        }));
     }
 
 

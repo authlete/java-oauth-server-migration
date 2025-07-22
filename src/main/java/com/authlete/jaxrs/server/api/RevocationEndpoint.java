@@ -30,6 +30,9 @@ import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.jaxrs.BaseRevocationEndpoint;
 import com.authlete.jaxrs.RevocationRequestHandler.Params;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.server.CallerStrategy;
+import com.authlete.jaxrs.server.ResponseReturnStrategy;
 
 
 /**
@@ -57,13 +60,13 @@ public class RevocationEndpoint extends BaseRevocationEndpoint
             MultivaluedMap<String, String> parameters)
     {
         // Authlete API
-        AuthleteApi authleteApi = AuthleteApiFactory.getDefaultApi();
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(CallerStrategy.CALL_BOTH, ResponseReturnStrategy.FIRST_NON_ERROR_RESPONSE, (authleteApi -> {
+            // Parameters for Authlete's /auth/revocation API
+            Params params = buildParams(request, parameters);
 
-        // Parameters for Authlete's /auth/revocation API
-        Params params = buildParams(request, parameters);
-
-        // Handle the revocation request.
-        return handle(authleteApi, params);
+            // Handle the revocation request.
+            return handle(authleteApi, params);
+        }));
     }
 
 

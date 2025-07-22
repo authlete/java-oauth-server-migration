@@ -26,6 +26,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.jaxrs.BaseGrantManagementEndpoint;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 
 
 /**
@@ -47,7 +48,7 @@ public class GrantManagementEndpoint extends BaseGrantManagementEndpoint
             @PathParam("grantId") String grantId)
     {
         // Handle the grant management 'query' request.
-        return handle(AuthleteApiFactory.getDefaultApi(), req, grantId);
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis((authleteApi -> handle(authleteApi, req, grantId)));
     }
 
 
@@ -61,6 +62,6 @@ public class GrantManagementEndpoint extends BaseGrantManagementEndpoint
             @PathParam("grantId") String grantId)
     {
         // Handle the grant management 'revoke' request.
-        return handle(AuthleteApiFactory.getDefaultApi(), req, grantId);
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis((authleteApi -> handle(authleteApi, req, grantId)));
     }
 }

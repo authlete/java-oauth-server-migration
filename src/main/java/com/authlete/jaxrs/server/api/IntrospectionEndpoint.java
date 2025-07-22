@@ -26,10 +26,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.web.BasicCredentials;
 import com.authlete.jaxrs.BaseIntrospectionEndpoint;
 import com.authlete.jaxrs.IntrospectionRequestHandler.Params;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 import com.authlete.jaxrs.server.db.ResourceServerDao;
 import com.authlete.jaxrs.server.db.ResourceServerEntity;
 
@@ -90,7 +90,19 @@ public class IntrospectionEndpoint extends BaseIntrospectionEndpoint
         Params params = buildParams(parameters, accept, rsEntity);
 
         // Handle the introspection request.
-        return handle(AuthleteApiFactory.getDefaultApi(), params);
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis((authleteApi -> handle(authleteApi, params)), (res, map) -> {
+            if (res.getStatus() != Status.OK.getStatusCode())
+            {
+                return true;
+            }
+
+            if (map.containsKey("active"))
+            {
+                return map.get("active").equals(false);
+            }
+
+            return true;
+        });
     }
 
 

@@ -33,6 +33,7 @@ import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.api.AuthleteApiException;
 import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.IntrospectionResponse;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 import com.authlete.jaxrs.server.obb.database.ConsentDao;
 import com.authlete.jaxrs.server.obb.model.Consent;
 import com.authlete.jaxrs.server.obb.model.CreateConsent;
@@ -60,23 +61,24 @@ public class ConsentsEndpoint
                 ObbUtils.computeOutgoingInteractionId(code, incomingInteractionId);
 
         // Validate the access token.
-        AuthleteApi authleteApi = AuthleteApiFactory.getDefaultApi();
-        IntrospectionResponse info = ObbUtils.validateAccessToken(
-                outgoingInteractionId, code, authleteApi, request, "consents");
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis((authleteApi ->{
+            IntrospectionResponse info = ObbUtils.validateAccessToken(
+                    outgoingInteractionId, code, authleteApi, request, "consents");
 
-        // Validate the input.
-        validateCreateConsent(
-                outgoingInteractionId, code, createConsent);
+            // Validate the input.
+            validateCreateConsent(
+                    outgoingInteractionId, code, createConsent);
 
-        // Create "consent".
-        Consent consent = ConsentDao.getInstance()
-                .create(createConsent, info.getClientId());
+            // Create "consent".
+            Consent consent = ConsentDao.getInstance()
+                    .create(createConsent, info.getClientId());
 
-        // Build a response body.
-        ResponseConsent rc = ResponseConsent.create(consent);
+            // Build a response body.
+            ResponseConsent rc = ResponseConsent.create(consent);
 
-        // Build a successful response.
-        return ObbUtils.created(outgoingInteractionId, rc);
+            // Build a successful response.
+            return ObbUtils.created(outgoingInteractionId, rc);
+        }));
     }
 
 
@@ -94,21 +96,22 @@ public class ConsentsEndpoint
                 ObbUtils.computeOutgoingInteractionId(code, incomingInteractionId);
 
         // Validate the access token.
-        AuthleteApi authleteApi = AuthleteApiFactory.getDefaultApi();
-        IntrospectionResponse info = ObbUtils.validateAccessToken(
-                outgoingInteractionId, code, authleteApi, request, "consents");
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            IntrospectionResponse info = ObbUtils.validateAccessToken(
+                    outgoingInteractionId, code, authleteApi, request, "consents");
 
-        // Find "consent".
-        Consent consent = ConsentDao.getInstance().read(consentId);
+            // Find "consent".
+            Consent consent = ConsentDao.getInstance().read(consentId);
 
-        // Validate the consent.
-        validateConsent(outgoingInteractionId, code, consent, info);
+            // Validate the consent.
+            validateConsent(outgoingInteractionId, code, consent, info);
 
-        // Build a response body.
-        ResponseConsent rc = ResponseConsent.create(consent);
+            // Build a response body.
+            ResponseConsent rc = ResponseConsent.create(consent);
 
-        // Build a successful response.
-        return ObbUtils.ok(outgoingInteractionId, rc);
+            // Build a successful response.
+            return ObbUtils.ok(outgoingInteractionId, rc);
+        });
     }
 
 
@@ -126,25 +129,26 @@ public class ConsentsEndpoint
                 ObbUtils.computeOutgoingInteractionId(code, incomingInteractionId);
 
         // Validate the access token.
-        AuthleteApi authleteApi = AuthleteApiFactory.getDefaultApi();
-        IntrospectionResponse info = ObbUtils.validateAccessToken(
-                outgoingInteractionId, code, authleteApi, request, "consents");
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            IntrospectionResponse info = ObbUtils.validateAccessToken(
+                    outgoingInteractionId, code, authleteApi, request, "consents");
 
-        // Find "consent".
-        Consent consent = ConsentDao.getInstance().read(consentId);
+            // Find "consent".
+            Consent consent = ConsentDao.getInstance().read(consentId);
 
-        // Validate the consent.
-        validateConsent(outgoingInteractionId, code, consent, info);
+            // Validate the consent.
+            validateConsent(outgoingInteractionId, code, consent, info);
 
-        // Delete the refresh token associated with the consent.
-        deleteRefreshToken(
-                outgoingInteractionId, code, authleteApi, consent.getRefreshToken());
+            // Delete the refresh token associated with the consent.
+            deleteRefreshToken(
+                    outgoingInteractionId, code, authleteApi, consent.getRefreshToken());
 
-        // Delete the consent.
-        ConsentDao.getInstance().delete(consentId);
+            // Delete the consent.
+            ConsentDao.getInstance().delete(consentId);
 
-        // Build a successful response.
-        return ObbUtils.noContent(outgoingInteractionId);
+            // Build a successful response.
+            return ObbUtils.noContent(outgoingInteractionId);
+        });
     }
 
 

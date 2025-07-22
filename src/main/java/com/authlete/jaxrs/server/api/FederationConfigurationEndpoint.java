@@ -24,6 +24,7 @@ import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.FederationConfigurationRequest;
 import com.authlete.common.types.EntityType;
 import com.authlete.jaxrs.BaseFederationConfigurationEndpoint;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 
 
 /**
@@ -78,6 +79,6 @@ public class FederationConfigurationEndpoint extends BaseFederationConfiguration
     public Response get()
     {
         // Handle the request to the endpoint.
-        return handle(AuthleteApiFactory.getDefaultApi(), REQUEST);
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis((authleteApi -> handle(authleteApi, REQUEST)));
     }
 }

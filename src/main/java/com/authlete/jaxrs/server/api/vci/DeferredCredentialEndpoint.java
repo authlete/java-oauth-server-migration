@@ -38,6 +38,7 @@ import com.authlete.common.dto.CredentialIssuanceOrder;
 import com.authlete.common.dto.CredentialRequestInfo;
 import com.authlete.common.dto.IntrospectionResponse;
 import com.authlete.common.types.ErrorCode;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 import com.authlete.jaxrs.server.util.ExceptionUtil;
 import com.authlete.jaxrs.server.util.ResponseUtil;
 import com.authlete.jaxrs.server.vc.OrderContext;
@@ -54,39 +55,39 @@ public class DeferredCredentialEndpoint extends AbstractCredentialEndpoint
             @HeaderParam("DPoP") String dpop,
             String requestContent)
     {
-        final AuthleteApi api = AuthleteApiFactory.getDefaultApi();
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            // Extract the access token from the request.
+            String accessToken = extractAccessToken(authorization, null);
 
-        // Extract the access token from the request.
-        String accessToken = extractAccessToken(authorization, null);
+            // The expected value of the 'htu' claim in the DPoP proof JWT.
+            String htu = computeHtu(authleteApi, dpop, "deferred_credential_endpoint");
 
-        // The expected value of the 'htu' claim in the DPoP proof JWT.
-        String htu = computeHtu(api, dpop, "deferred_credential_endpoint");
+            // Validate the access token
+            IntrospectionResponse introspection =
+                    introspect(request, authleteApi, accessToken, dpop, htu);
 
-        // Validate the access token
-        IntrospectionResponse introspection =
-                introspect(request, api, accessToken, dpop, htu);
+            // The headers that the response from this endpoint should include.
+            Map<String, Object> headers = prepareHeaders(introspection);
 
-        // The headers that the response from this endpoint should include.
-        Map<String, Object> headers = prepareHeaders(introspection);
+            // Parse the deferred credential request.
+            CredentialRequestInfo info = parseRequest(
+                    authleteApi, requestContent, accessToken, headers);
 
-        // Parse the deferred credential request.
-        CredentialRequestInfo info = parseRequest(
-                api, requestContent, accessToken, headers);
+            // Prepare a credential issuance order.
+            CredentialIssuanceOrder order =
+                    prepareOrder(OrderContext.DEFERRED, introspection, info, headers);
 
-        // Prepare a credential issuance order.
-        CredentialIssuanceOrder order =
-                prepareOrder(OrderContext.DEFERRED, introspection, info, headers);
+            // If the requested credential is not ready yet.
+            if (order.isIssuanceDeferred())
+            {
+                // 400 Bad Request + "error":"issuance_pending"
+                throw ExceptionUtil.badRequestExceptionJson(
+                        errorJson(ErrorCode.issuance_pending, null), headers);
+            }
 
-        // If the requested credential is not ready yet.
-        if (order.isIssuanceDeferred())
-        {
-            // 400 Bad Request + "error":"issuance_pending"
-            throw ExceptionUtil.badRequestExceptionJson(
-                    errorJson(ErrorCode.issuance_pending, null), headers);
-        }
-
-        // Issue a credential and return a deferred credential response.
-        return issue(api, order, headers);
+            // Issue a credential and return a deferred credential response.
+            return issue(authleteApi, order, headers);
+        });
     }
 
 

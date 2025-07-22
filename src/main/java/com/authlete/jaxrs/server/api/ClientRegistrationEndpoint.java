@@ -37,6 +37,9 @@ import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.util.Utils;
 import com.authlete.jaxrs.BaseClientRegistrationEndpoint;
+import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.server.CallerStrategy;
+import com.authlete.jaxrs.server.ResponseReturnStrategy;
 import com.authlete.jaxrs.server.obb.util.ObbUtils;
 
 
@@ -71,13 +74,13 @@ public class ClientRegistrationEndpoint extends BaseClientRegistrationEndpoint
             @Context HttpServletRequest httpServletRequest)
     {
         // The interface of Authlete APIs.
-        AuthleteApi api = AuthleteApiFactory.getDefaultApi();
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(CallerStrategy.ONLY_V3, ResponseReturnStrategy.V3_RESPONSE, authleteApi -> {
+            // Pre-process the request body as necessary.
+            String jsonResponse = preprocessRequestBody(httpServletRequest, json);
 
-        // Pre-process the request body as necessary.
-        json = preprocessRequestBody(httpServletRequest, json);
-
-        // Execute the "register" operation.
-        return handleRegister(api, json, authorization);
+            // Execute the "register" operation.
+            return handleRegister(authleteApi, jsonResponse, authorization);
+        }, (res, body) -> res.getStatus() >= Status.BAD_REQUEST.getStatusCode());
     }
 
 
@@ -92,13 +95,13 @@ public class ClientRegistrationEndpoint extends BaseClientRegistrationEndpoint
             @Context HttpServletRequest httpServletRequest)
     {
         // The interface of Authlete APIs.
-        AuthleteApi api = AuthleteApiFactory.getDefaultApi();
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            // Extra process before executing the "read" operation.
+            preprocessClient(httpServletRequest, authleteApi, clientId);
 
-        // Extra process before executing the "read" operation.
-        preprocessClient(httpServletRequest, api, clientId);
-
-        // Execute the "read" operation.
-        return handleGet(api, clientId, authorization);
+            // Execute the "read" operation.
+            return handleGet(authleteApi, clientId, authorization);
+        });
     }
 
 
@@ -115,13 +118,13 @@ public class ClientRegistrationEndpoint extends BaseClientRegistrationEndpoint
             @Context HttpServletRequest httpServletRequest)
     {
         // The interface of Authlete APIs.
-        AuthleteApi api = AuthleteApiFactory.getDefaultApi();
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            // Pre-process the request body as necessary.
+            String jsonResponse = preprocessRequestBody(httpServletRequest, json);
 
-        // Pre-process the request body as necessary.
-        json = preprocessRequestBody(httpServletRequest, json);
-
-        // Execute the "update" operation.
-        return handleUpdate(api, clientId, json, authorization);
+            // Execute the "update" operation.
+            return handleUpdate(authleteApi, clientId, jsonResponse, authorization);
+        });
     }
 
 
@@ -136,13 +139,13 @@ public class ClientRegistrationEndpoint extends BaseClientRegistrationEndpoint
             @Context HttpServletRequest httpServletRequest)
     {
         // The interface of Authlete APIs.
-        AuthleteApi api = AuthleteApiFactory.getDefaultApi();
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            // Extra process before executing the "delete" operation.
+            preprocessClient(httpServletRequest, authleteApi, clientId);
 
-        // Extra process before executing the "delete" operation.
-        preprocessClient(httpServletRequest, api, clientId);
-
-        // Execute the "delete" operation.
-        return handleDelete(api, clientId, authorization);
+            // Execute the "delete" operation.
+            return handleDelete(authleteApi, clientId, authorization);
+        });
     }
 
 

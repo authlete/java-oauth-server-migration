@@ -28,6 +28,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
+import com.authlete.jaxrs.server.AuthleteApiHolder;
 import org.glassfish.jersey.server.mvc.Viewable;
 import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.api.AuthleteApiFactory;
@@ -68,32 +70,33 @@ public class CredentialOfferIssueEndpoint extends BaseEndpoint
         final CredentialOfferPageModel model = new CredentialOfferPageModel()
                 .setValues(flatMap);
 
-        final AuthleteApi api = AuthleteApiFactory.getDefaultApi();
         final User user = ProcessingUtil.getUser(session, parameters);
-
         if (user == null)
         {
             throw ExceptionUtil.badRequestException("Bad authentication.");
         }
 
         final CredentialOfferCreateRequest createRequest = model.toRequest(user);
-        final CredentialOfferCreateResponse response = api.credentialOfferCreate(createRequest);
 
-        switch (response.getAction())
-        {
-            case CREATED:
-                model.setInfo(response.getInfo());
-                model.setUser(user);
+        return AuthleteApiHolder.getInstance().tryWithAuthleteApis(authleteApi -> {
+            final CredentialOfferCreateResponse response = authleteApi.credentialOfferCreate(createRequest);
 
-                // Create a Viewable instance that represents the credential offer page.
-                // Viewable is a class provided by Jersey for MVC.
-                final Viewable viewable = new Viewable("/credential-offer", model);
+            switch (response.getAction())
+            {
+                case CREATED:
+                    model.setInfo(response.getInfo());
+                    model.setUser(user);
 
-                // Create a response that has the viewable as its content.
-                return Response.ok(viewable, MediaType.TEXT_HTML_TYPE.withCharset("UTF-8")).build();
+                    // Create a Viewable instance that represents the credential offer page.
+                    // Viewable is a class provided by Jersey for MVC.
+                    final Viewable viewable = new Viewable("/credential-offer", model);
 
-            default:
-                throw ExceptionUtil.badRequestException("An exception occured: " + response.getResultMessage());
-        }
+                    // Create a response that has the viewable as its content.
+                    return Response.ok(viewable, MediaType.TEXT_HTML_TYPE.withCharset("UTF-8")).build();
+
+                default:
+                    throw ExceptionUtil.badRequestException("An exception occured: " + response.getResultMessage());
+            }
+        });
     }
 }
