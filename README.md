@@ -1,73 +1,54 @@
-Authorization Server Implementation in Java
-===========================================
+# Authorization Server Implementation that supports Authlete server version migration
 
-Overview
---------
+Authorization Server Implementation in Java supporting OAuth 2.0 & OpenID Connect, extended to demonstrate 
+zero-downtime migration from Authlete 2.3 to 3.0.
 
-This is an authorization server implementation in Java which supports
-[OAuth 2.0][1] and [OpenID Connect][2].
+## Overview
 
-This implementation is written using JAX-RS 2.0 API and [authlete-java-jaxrs][3]
-library. JAX-RS is _The Java API for RESTful Web Services_. JAX-RS 2.0 API has
-been standardized by [JSR 339][4] and it is included in Java EE 7. On the other
-hand, authlete-java-jaxrs library is an open source library which provides utility
-classes for developers to implement an authorization server and a resource server.
-authlete-java-jaxrs in turn uses [authlete-java-common][5] library which is
-another open source library to communicate with [Authlete Web APIs][6].
+This is an authorization server implementation is based on 
+[Java OAuth Server (java-oauth-server)](https://github.com/authlete/java-oauth-server)
+implementation and extended to demonstrate how zero-downtime migration can be achieved between Authlete server version 
+2.3 and 3.0.
 
-This implementation is _DB-less_. What this means is that you don't have to
-have a database server that stores authorization data (e.g. access tokens),
-settings of the authorization server itself and settings of client applications.
-This is achieved by using [Authlete][7] as a backend service.
+Please refer to the [main repository](https://github.com/authlete/java-oauth-server) for further information about 
+the OAuth server and its implementation. This repository primarily focuses on the new changes made in order to 
+support zero-downtime migration.
 
-Access tokens issued by this authorization server can be used at a resource
-server which uses Authlete as a backend service. [java-resource-server][40]
-is such a resource server implementation. It includes an example implementation
-of protected resource endpoint.
+The application accepts arguments for both the version 3 Authlete server as well as the 2.3 Authlete server. Connecting
+to two Authlete servers will allow the OAuth server application to handle requests first via the connected 3.0 Authlete 
+server, if there is an authentication related or general error then application will then attempt to satisfy the request
+via the Authlete 2.3 server.
 
+The general approach is to assume that the version 3 Authlete server is able to handle all requests. During the migration
+period it may be unable to successfully handle every request for various reasons such as:
+- Client has not been created or migrated into the Authlete 3 server
+- Client's token have not been created/updated in the Authlete 3 server
+- Other configuration made in Authlete 2.3 has not been applied to the Authlete 3 server application
 
-License
--------
+While specific clients and/or their tokens are being migrated to the Authlete 3 server, the OAuth application will 
+refer to the 2.3 Authlete server to satisfy these specific requests. This should continue until ideally all requests
+are handled only by the Authlete 3 server.
 
-  Apache License, Version 2.0
+Once all configuration has been moved and you are satisfied with the configuration, the Authlete 2.3 service can be 
+decommissioned. In future maintenance periods, the properties for the OAuth server can remove Authlete 2.3 configuration
+or can even move back to the [main repository's](https://github.com/authlete/java-oauth-server) implementation to 
+just support the new version 3 of Authlete server.
 
-  JSON files under `src/main/resources/ekyc-ida` have been copied from
-  https://bitbucket.org/openid/ekyc-ida/src/master/examples/response/ .
-  Regarding their license, ask the eKYC-IDA WG of OpenID Foundation.
+------------------------------------------------------------------------------------------------------------------------
 
+## How to Run the Application
 
-Source Code
------------
+1. Similarly to the [main repository's](https://github.com/authlete/java-oauth-server), you can clone this repository.
 
-  <code>https://github.com/authlete/java-oauth-server</code>
-
-
-About Authlete
---------------
-
-[Authlete][7] is a cloud service that provides an implementation of OAuth 2.0
-& OpenID Connect ([overview][8]). You can easily get the functionalities of
-OAuth 2.0 and OpenID Connect either by using the default implementation
-provided by Authlete or by implementing your own authorization server using
-[Authlete Web APIs][6] as this implementation (java-oauth-server) does.
-
-To use this authorization server implementation, you need to get API credentials
-from Authlete and set them in `authlete.properties`. The steps to get API
-credentials are very easy. All you have to do is just to register your account
-([sign up][9]). See [Getting Started][10] for details.
-
-
-How To Run
-----------
-
-1. Download the source code of this authorization server implementation.
-
-        $ git clone https://github.com/authlete/java-oauth-server.git
-        $ cd java-oauth-server
-
-2. Edit the configuration file to set the API credentials of yours.
-
-        $ vi authlete.properties
+2. Edit the configuration file (`authlete.properties`) to set the API credentials. To enable migration support the 
+following properties need to be set:
+   - `v2_base_url` - The base URL to access the Authlete 2.3 application
+   - `base_url` - The base URL to access the Authlete 3 application
+   - `service.api_key` - The Service ID, this ID must be the same in both Authlete 2.3 and 3.0 applications (it can be
+created manually in Authlete 3 or imported via the Organization settings)
+   - `service.api_secret` (Authlete 2.3) the service secret from the Authlete 2.3 console
+   - `api_version` - Should be set to ***V3***
+   - `service.access_token` (Authlete 3.0) the service token from the Authlete 3 console
 
 3. Make sure that you have installed [maven][42] and set `JAVA_HOME` properly.
 
@@ -75,176 +56,134 @@ How To Run
 
         $ mvn jetty:run &
 
-#### Run With Docker
+### Run with Docker
 
-If you would prefer to use Docker, just hit the following command after the step 2.
+If you prefer to use Docker, just run the following command after the step 2.
 
     $ docker-compose up
 
-#### Configuration File
+------------------------------------------------------------------------------------------------------------------------
 
-`java-oauth-server` refers to `authlete.properties` as a configuration file.
-If you want to use another different file, specify the name of the file by
-the system property `authlete.configuration.file` like the following.
+## Zero-Downtime Migration Endpoint Changes
 
-    $ mvn -Dauthlete.configuration.file=local.authlete.properties jetty:run &
+This section will outline the new behaviour for each endpoint specifically such as which response would be returned and 
+how the primary and secondary AuthleteApis are called. Along with how a "failed"/"error" response is determined from 
+the AuthleteApi responses.
 
+The primary AuthleteApi (in this case Authlete 3 API) is always called first, based on its response and the below 
+configuration will determine whether the application needs to fallback to the secondary if the response is deemed to not
+be successful.
 
-Endpoints
----------
+By default, a response from the AuthleteApi is determined by its response code having a value greater or equal to `400`.
+Other conditions that contribute to an error response will be indicated per endpoint.
 
-This implementation exposes endpoints as listed in the table below.
+### Introspection Endpoint (/api/introspection)
 
-| Endpoint                             | Path                                    |
-|:-------------------------------------|:----------------------------------------|
-| Authorization Endpoint               | `/api/authorization`                    |
-| Token Endpoint                       | `/api/token`                            |
-| JWK Set Endpoint                     | `/api/jwks`                             |
-| Discovery Endpoint                   | `/.well-known/openid-configuration`     |
-| Revocation Endpoint                  | `/api/revocation`                       |
-| Introspection Endpoint               | `/api/introspection`                    |
-| UserInfo Endpoint                    | `/api/userinfo`                         |
-| Dynamic Client Registration Endpoint | `/api/register`                         |
-| Pushed Authorization Request Endpoint| `/api/par`                              |
-| Grant Management Endpoint            | `/api/gm/{grantId}`                     |
-| Federation Configuration Endpoint    | `/.well-known/openid-federation`        |
-| Federation Registration Endpoint     | `/api/federation/register`              |
-| Credential Issuer Metadata Endpoint  | `/.well-known/openid-credential-issuer` |
-| JWT Issuer Metadata Endpoint         | `/.well-known/jwt-issuer`               |
+- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
+a successful response).
+- A successful response is determined by the response having a HTTP 200 status code and the `active` JSON response
+body property must have the value `true`.
 
-The authorization endpoint and the token endpoint accept parameters described
-in [RFC 6749][1], [OpenID Connect Core 1.0][13],
-[OAuth 2.0 Multiple Response Type Encoding Practices][33], [RFC 7636][14]
-([PKCE][15]) and other specifications.
+### Authorization Endpoint (/api/authorization)
 
-The JWK Set endpoint exposes a JSON Web Key Set document (JWK Set) so that
-client applications can (1) verify signatures by this OpenID Provider and
-(2) encrypt their requests to this OpenID Provider.
+- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
+  a successful response).
 
-The configuration endpoint exposes the configuration information of this
-OpenID Provider in the JSON format defined in [OpenID Connect Discovery 1.0][35].
+### Token Endpoint (/api/token)
 
-The revocation endpoint is a Web API to revoke access tokens and refresh
-tokens. Its behavior is defined in [RFC 7009][21].
+- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
+  a successful response).
 
-The introspection endpoint is a Web API to get information about access
-tokens and refresh tokens. Its behavior is defined in [RFC 7662][32].
+### Auth Decision Endpoint (/api/authorization/decision)
 
-The userinfo endpoint is a Web API to get information about an end-user.
-Its behavior is defined in [Section 5.3. UserInfo Endpoint][41] of
-[OpenID Connect Core 1.0][13].
+- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
+  a successful response).
 
-The dynamic client registration endpoint is a Web API to register and update
-client applications. Its behavior is defined in [RFC 7591][43] and [RFC 7592][44].
+### JWKS endpoint (/api/jwks)
 
-The pushed authorization request endpoint (a.k.a. PAR endpoint) is a Web API
-to register an authorization request in advance and obtain a request URI.
-Its behavior is defined in [RFC 9126][45].
+- Will always return the response from the primary AuthleteApi (Authlete 3 API).
 
-The grant management endpoint is a Web API to get information about a grant ID
-and revoke a grant ID. Its behavior is defined in [Grant Management for OAuth 2.0][46].
+### Discovery Endpoint (/.well-known/openid-configuration)
 
-The federation configuration endpoint is a Web API that publishes the entity
-configuration of the authorization server in the JWT format. Its behavior is
-defined in [OpenID Federation 1.0][OIDFED].
+- Will always return the response from the primary AuthleteApi (Authlete 3 API).
 
+### Revocation Endpoint (/api/revocation)
 
-Authorization Request Example
------------------------------
+- Will always call **BOTH** the primary and secondary AuthleteApis to attempt to revoke the token in both environments.
+Even if the call to the primary is successful.
+- The first non-error response is returned. Meaning if both are successful the primary's response is returned, if only
+the primary is successful its response is returned, and if only the secondary is successful its response is returned.
 
-The following is an example to get an access token from the authorization
-endpoint using [Implicit Flow][16]. Don't forget to replace `{client-id}` in
-the URL with the real client ID of one of your client applications. As for
-client applications, see [Getting Started][10] and the [document][17] of
-_Developer Console_.
+### User info endpoint (/api/userinfo)
 
-    http://localhost:8080/api/authorization?client_id={client-id}&response_type=token
+- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
+  a successful response).
 
-The request above will show you an authorization page. The page asks you to
-input login credentials and click "Authorize" button or "Deny" button. Use
-one of the following as login credentials.
+### Dynamic Client Registration Endpoint (/api/register/{id})
 
-| Login ID | Password |
-|:--------:|:--------:|
-|   john   |   john   |
-|   jane   |   jane   |
-|   max    |   max    |
-|   inga   |   inga   |
+- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
+  a successful response).
 
-Of course, these login credentials are dummy data, so you need to replace
-the user database implementation with your own.
+### PAR Endpoint (/api/par)
 
-The account `max` is for the old draft of
-[OpenID Connect for Identity Assurance 1.0][IDA] (IDA). The account holds
-_verified claims_ in the old format. Authlete 2.2 accepts the old format
-but Authlete 2.3 onwards will reject it.
+- Will always call **BOTH** the primary and secondary AuthleteApis to attempt to revoke the token in both environments.
+  Even if the call to the primary is successful.
+- The first non-error response is returned. Meaning if both are successful the primary's response is returned, if only
+  the primary is successful its response is returned, and if only the secondary is successful its response is returned.
 
-The account `inga` is for the third Implementer's Draft of [IDA][IDA] onwards.
-Use `inga` for testing the latest IDA specification. However, note that
-the third Implementer's Draft onwards is supported from Authlete 2.3.
-Older Authlete versions do not support the latest IDA specification.
+### Grant Management Endpoint (/api/gm/{id})
 
+- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
+  a successful response).
 
-Customization
--------------
+### Federation Configuration Endpoint (/.well-known/openid-federation)
 
-How to customize this implementation is described in [CUSTOMIZATION.md][39].
-Basically, you need to do programming for _end-user authentication_ because
-Authlete does not manage end-user accounts. This is by design. The
-architecture of Authlete carefully separates authorization from authentication
-so that you can add OAuth 2.0 and OpenID Connect functionalities seamlessly
-into even an existing web service which may already have a mechanism for
-end-user authentication.
+### Federation Endpoint (/api/federation)
 
+### Federation Registration (/api/federation/register)
 
-Implementation Note
--------------------
+### JWT Issuer metadata endpoint (/.well-known/jwt-issuer)
 
-This implementation uses `Viewable` class to implement the authorization page.
-The class is included in [Jersey][18] (the reference implementation of JAX-RS),
-but it is not a part of JAX-RS 2.0 API.
+- Will always return the response from the primary AuthleteApi (Authlete 3 API). Since this is an Authlete 3 only feature.
 
+### Credential Metadata Endpoint (/.well-known/openid-credential-issuer)
 
-Related Specifications
-----------------------
+- Will always return the response from the primary AuthleteApi (Authlete 3 API). Since this is an Authlete 3 only feature.
 
-- [RFC 6749][1] - The OAuth 2.0 Authorization Framework
-- [RFC 6750][19] - The OAuth 2.0 Authorization Framework: Bearer Token Usage
-- [RFC 6819][20] - OAuth 2.0 Threat Model and Security Considerations
-- [RFC 7009][21] - OAuth 2.0 Token Revocation
-- [RFC 7033][22] - WebFinger
-- [RFC 7515][23] - JSON Web Signature (JWS)
-- [RFC 7516][24] - JSON Web Encryption (JWE)
-- [RFC 7517][25] - JSON Web Key (JWK)
-- [RFC 7518][26] - JSON Web Algorithms (JWA)
-- [RFC 7519][27] - JSON Web Token (JWT)
-- [RFC 7521][28] - Assertion Framework for OAuth 2.0 Client Authentication and Authorization Grants
-- [RFC 7522][29] - Security Assertion Markup Language (SAML) 2.0 Profile for OAuth 2.0 Client Authentication and Authorization Grants
-- [RFC 7523][30] - JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants
-- [RFC 7591][43] - OAuth 2.0 Dynamic Client Registration Protocol
-- [RFC 7592][44] - OAuth 2.0 Dynamic Client Registration Management Protocol
-- [RFC 7636][31] - Proof Key for Code Exchange by OAuth Public Clients
-- [RFC 7662][32] - OAuth 2.0 Token Introspection
-- [RFC 9126][45] - OAuth 2.0 Pushed Authorization Requests
-- [OAuth 2.0 Multiple Response Type Encoding Practices][33]
-- [OAuth 2.0 Form Post Response Mode][34]
-- [OpenID Connect Core 1.0][13]
-- [OpenID Connect Discovery 1.0][35]
-- [OpenID Connect Dynamic Client Registration 1.0][36]
-- [OpenID Connect Session Management 1.0][37]
+### (Verifiable) Credential Endpoint (/api/credential)
 
+- Will always return the response from the primary AuthleteApi (Authlete 3 API). Since this is an Authlete 3 only feature.
 
-See Also
---------
+### Batch Credential Endpoint (/api/batch_credential)
+
+- Will always return the response from the primary AuthleteApi (Authlete 3 API). Since this is an Authlete 3 only feature.
+
+### Backchannel Endpoint (/api/backchannel/authentication)
+
+### Backchannel Callback Endpoint (/api/backchannel/authentication/callback)
+
+### Device Endpoints (/api/device/authorization - /api/device/complete - /api/device/verification)
+
+### OBB Endpoints (/api/obb/accounts - /api/consents - /api/obb/fapi2base-accounts - /api/obb/resources)
+
+### VCI Endpoints (/api/vci/jwks)
+
+### Credential Offer Endpoint (/api/offer/{id} - /api/offer/issue)
+
+### Deferred Credential Endpoint (/api/deferred_credential)
+
+------------------------------------------------------------------------------------------------------------------------
+
+## See Also
 
 - [Authlete][7] - Authlete Home Page
 - [authlete-java-common][5] - Authlete Common Library for Java
 - [authlete-java-jaxrs][3] - Authlete Library for JAX-RS (Java)
 - [java-resource-server][40] - Resource Server Implementation
 
+------------------------------------------------------------------------------------------------------------------------
 
-Contact
--------
+## Contact
 
 | Purpose   | Email Address        |
 |:----------|:---------------------|
@@ -252,6 +191,16 @@ Contact
 | Sales     | sales@authlete.com   |
 | PR        | pr@authlete.com      |
 | Technical | support@authlete.com |
+
+------------------------------------------------------------------------------------------------------------------------
+
+## License
+
+Apache License, Version 2.0
+
+JSON files under `src/main/resources/ekyc-ida` have been copied from
+https://bitbucket.org/openid/ekyc-ida/src/master/examples/response/ .
+Regarding their license, ask the eKYC-IDA WG of OpenID Foundation.
 
 
 [1]: https://www.rfc-editor.org/rfc/rfc6749.html

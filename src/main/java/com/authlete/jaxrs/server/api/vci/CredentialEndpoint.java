@@ -38,6 +38,8 @@ import com.authlete.common.dto.CredentialSingleParseRequest;
 import com.authlete.common.dto.CredentialSingleParseResponse;
 import com.authlete.common.dto.IntrospectionResponse;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.server.CallerStrategy;
+import com.authlete.jaxrs.server.ResponseReturnStrategy;
 import com.authlete.jaxrs.server.util.ExceptionUtil;
 import com.authlete.jaxrs.server.util.ResponseUtil;
 import com.authlete.jaxrs.server.vc.OrderContext;
@@ -55,7 +57,7 @@ public class CredentialEndpoint extends AbstractCredentialEndpoint
             @QueryParam("deferred") String deferred,
             String requestContent)
     {
-        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, authleteApi -> {
             // Extract the access token from the request.
             String accessToken = extractAccessToken(authorization, null);
 
