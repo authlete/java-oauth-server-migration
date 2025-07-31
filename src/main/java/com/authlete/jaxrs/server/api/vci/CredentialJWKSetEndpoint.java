@@ -25,6 +25,8 @@ import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.dto.CredentialIssuerJwksRequest;
 import com.authlete.common.dto.CredentialIssuerJwksResponse;
 import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.server.CallerStrategy;
+import com.authlete.jaxrs.server.ResponseReturnStrategy;
 import com.authlete.jaxrs.server.util.ExceptionUtil;
 import com.authlete.jaxrs.server.util.ResponseUtil;
 
@@ -35,7 +37,7 @@ public class CredentialJWKSetEndpoint extends AbstractCredentialEndpoint
     @GET
     public Response get()
     {
-        return AuthleteApiHolder.getInstance().withApi(this::process);
+        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, this::process);
     }
 
 

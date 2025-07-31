@@ -25,6 +25,9 @@ import java.util.function.Function;
 public class AuthleteApiHolder
 {
     private static final String V2_BASE_URL = "v2_base_url";
+    private static final Gson gson = new Gson();
+    private static final Type type = new TypeToken<Map<String, Object>>() {}.getType();
+    private static final AuthleteApiHolder INSTANCE = new AuthleteApiHolder();
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -38,8 +41,6 @@ public class AuthleteApiHolder
      */
     private final AuthleteApi primaryAuthleteApi;
 
-    private static final AuthleteApiHolder INSTANCE = new AuthleteApiHolder();
-
     private AuthleteApiHolder()
     {
         AuthleteConfiguration initialConfiguration = new AuthletePropertiesConfiguration();
@@ -51,7 +52,7 @@ public class AuthleteApiHolder
         if (AuthleteApiVersion.V3.name().equalsIgnoreCase(initialConfiguration.getApiVersion())
                 && initialConfiguration.getServiceApiSecret() != null && !initialConfiguration.getServiceApiSecret().isEmpty())
         {
-            logger.info("Api Version set to [{}] but [{}] supported properties have also been provided. Initializing configuration with both Authlete 2.3 and Authlete 3.",
+            logger.info("Api Version set to [{}] but [{}] supported properties have also been provided. Initializing migration supported configuration with configured both Authlete 2.3 and Authlete 3 applications.",
                     initialConfiguration.getApiVersion(), AuthleteApiVersion.V2);
             AuthleteConfiguration v2Configuration = new AuthleteSimpleConfiguration()
                     .setBaseUrl(System.getProperty(V2_BASE_URL, initialConfiguration.getBaseUrl()))
@@ -109,6 +110,10 @@ public class AuthleteApiHolder
         {
             primaryResponse = t.getResponse();
         }
+        catch (Throwable t)
+        {
+            primaryResponse = null;
+        }
         boolean primaryIsError = primaryResponse == null || isErrorFunction.apply(primaryResponse, getResponseAsMap(primaryResponse));
         if (callerStrategy == CallerStrategy.ONLY_PRIMARY
             || (callerStrategy == CallerStrategy.UNTIL_SUCCESS && !primaryIsError))
@@ -125,7 +130,11 @@ public class AuthleteApiHolder
         {
             secondaryResponse = t.getResponse();
         }
-        boolean secondaryIsError = isErrorFunction.apply(secondaryResponse, getResponseAsMap(secondaryResponse));
+        catch (Throwable t)
+        {
+            secondaryResponse = null;
+        }
+        boolean secondaryIsError = secondaryResponse == null || isErrorFunction.apply(secondaryResponse, getResponseAsMap(secondaryResponse));
 
         // We won't check for ResponseReturnStrategy.PRIMARY since returning v3 response is the default fall through case
 
@@ -196,11 +205,13 @@ public class AuthleteApiHolder
         return primaryResponse;
     }
 
-    private static final Gson gson = new Gson();
-    private static final Type type = new TypeToken<Map<String, Object>>() {}.getType();
-
     private static Map<String, Object> getResponseAsMap(Response response)
     {
+        if (response == null)
+        {
+            return null;
+        }
+
         response.bufferEntity();
         try
         {

@@ -42,7 +42,7 @@ public class PushedAuthReqEndpoint extends BasePushedAuthReqEndpoint
             MultivaluedMap<String, String> parameters)
     {
         // Authlete API
-        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.CALL_BOTH, ResponseReturnStrategy.FIRST_NON_ERROR_RESPONSE, authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             // Parameters for Authlete's pushed_auth_req API.
             Params params = buildParams(request, parameters);
 

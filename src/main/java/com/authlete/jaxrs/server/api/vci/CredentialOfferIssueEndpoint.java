@@ -30,6 +30,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.server.CallerStrategy;
+import com.authlete.jaxrs.server.ResponseReturnStrategy;
 import org.glassfish.jersey.server.mvc.Viewable;
 import com.authlete.common.dto.CredentialOfferCreateRequest;
 import com.authlete.common.dto.CredentialOfferCreateResponse;
@@ -76,7 +78,7 @@ public class CredentialOfferIssueEndpoint extends BaseEndpoint
 
         final CredentialOfferCreateRequest createRequest = model.toRequest(user);
 
-        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, authleteApi -> {
             final CredentialOfferCreateResponse response = authleteApi.credentialOfferCreate(createRequest);
 
             switch (response.getAction())

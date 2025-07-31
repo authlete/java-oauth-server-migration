@@ -70,42 +70,63 @@ This section will outline the new behaviour for each endpoint specifically such 
 how the primary and secondary AuthleteApis are called. Along with how a "failed"/"error" response is determined from 
 the AuthleteApi responses.
 
-The primary AuthleteApi (in this case Authlete 3 API) is always called first, based on its response and the below 
-configuration will determine whether the application needs to fallback to the secondary if the response is deemed to not
-be successful.
+The following endpoints are impacted by this implementation, any notes asside from the above default behaviour will be 
+noted below:
+- **Default behaviour** marks endpoints that initially attempt to make the API call to the primary AuthleteApi. If the
+response is an error then the application will attempt to make the call to the secondary AuthleteApi returning the 
+successful API result to the caller, otherwise if both are failure response the primary's response is returned.
+- **Call Primary Only (3.0)** marks endpoints that are exclusively new 3.0 feature endpoints so calls to these endpoints 
+are only made to the primary AuthleteApi and its response is returned immediately without considering the secondary 
+AuthleteApi configuration.
+- **Calls both APIs** marks endpoints that make calls to both the primary and secondary AuthleteApi then once the API
+call has been made to both then the application determines which response to return to the caller.
+
+| Endpoint                                 | Default behaviour | Call Primary Only (3.0) | Calls both APIs |
+|------------------------------------------|-------------------|-------------------------|-----------------|
+| /api/revocation                          |                   |                         | X               |
+| /api/introspection                       | X                 |                         |                 |
+| /api/authorization                       | X                 |                         |                 |
+| /api/token                               | X                 |                         |                 |
+| /api/authorization/decision              | X                 |                         |                 |
+| /api/userinfo                            | X                 |                         |                 |
+| /api/register/{id}                       | X                 |                         |                 |
+| /api/par                                 | X                 |                         |                 |
+| /api/gm/{id}                             | X                 |                         |                 |
+| /.well-known/openid-federation           | X                 |                         |                 |
+| /api/federation/register                 | X                 |                         |                 |
+| /api/backchannel/authentication          | X                 |                         |                 |
+| /api/backchannel/authentication/callback | X                 |                         |                 |
+| /api/device/authorization                | X                 |                         |                 |
+| /api/device/complete                     | X                 |                         |                 |
+| /api/device/verification                 | X                 |                         |                 |
+| /api/obb/accounts                        | X                 |                         |                 |
+| /api/obb/resources                       | X                 |                         |                 |
+| /api/obb/fapi2base-accounts              | X                 |                         |                 |
+| /api/consents                            | X                 |                         |                 |
+| /api/jwks                                |                   | X                       |                 |
+| /.well-known/openid-configuration        |                   | X                       |                 |
+| /.well-known/jwt-issuer                  |                   | X                       |                 |
+| /.well-known/openid-credential-issuer    |                   | X                       |                 |
+| /api/credential                          |                   | X                       |                 |
+| /api/batch_credential                    |                   | X                       |                 |
+| /api/vci/jwks                            |                   | X                       |                 |
+| /api/offer/{id}                          |                   | X                       |                 |
+| /api/offer/issue                         |                   | X                       |                 |
+| /api/deferred_credential                 |                   | X                       |                 |
+
+------------------------------------------------------------------------------------------------------------------------
+
+## Determining API Failures
+
+Any endpoints that have non-default implementations to determine an endpoint failure are documented explicitly below.
 
 By default, a response from the AuthleteApi is determined by its response code having a value greater or equal to `400`.
-Other conditions that contribute to an error response will be indicated per endpoint.
+Other conditions that contribute to an error response can be specified per endpoint.
 
 ### Introspection Endpoint (/api/introspection)
 
-- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
-a successful response).
 - A successful response is determined by the response having a HTTP 200 status code and the `active` JSON response
 body property must have the value `true`.
-
-### Authorization Endpoint (/api/authorization)
-
-- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
-  a successful response).
-
-### Token Endpoint (/api/token)
-
-- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
-  a successful response).
-
-### Auth Decision Endpoint (/api/authorization/decision)
-
-- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
-  a successful response).
-
-### JWKS endpoint (/api/jwks)
-
-- Will always return the response from the primary AuthleteApi (Authlete 3 API).
-
-### Discovery Endpoint (/.well-known/openid-configuration)
-
-- Will always return the response from the primary AuthleteApi (Authlete 3 API).
 
 ### Revocation Endpoint (/api/revocation)
 
@@ -113,64 +134,6 @@ body property must have the value `true`.
 Even if the call to the primary is successful.
 - The first non-error response is returned. Meaning if both are successful the primary's response is returned, if only
 the primary is successful its response is returned, and if only the secondary is successful its response is returned.
-
-### User info endpoint (/api/userinfo)
-
-- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
-  a successful response).
-
-### Dynamic Client Registration Endpoint (/api/register/{id})
-
-- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
-  a successful response).
-
-### PAR Endpoint (/api/par)
-
-- Will always call **BOTH** the primary and secondary AuthleteApis to attempt to revoke the token in both environments.
-  Even if the call to the primary is successful.
-- The first non-error response is returned. Meaning if both are successful the primary's response is returned, if only
-  the primary is successful its response is returned, and if only the secondary is successful its response is returned.
-
-### Grant Management Endpoint (/api/gm/{id})
-
-- Will call the primary and secondary until there is a success (the secondary will not be called if the primary returns
-  a successful response).
-
-### Federation Configuration Endpoint (/.well-known/openid-federation)
-
-### Federation Endpoint (/api/federation)
-
-### Federation Registration (/api/federation/register)
-
-### JWT Issuer metadata endpoint (/.well-known/jwt-issuer)
-
-- Will always return the response from the primary AuthleteApi (Authlete 3 API). Since this is an Authlete 3 only feature.
-
-### Credential Metadata Endpoint (/.well-known/openid-credential-issuer)
-
-- Will always return the response from the primary AuthleteApi (Authlete 3 API). Since this is an Authlete 3 only feature.
-
-### (Verifiable) Credential Endpoint (/api/credential)
-
-- Will always return the response from the primary AuthleteApi (Authlete 3 API). Since this is an Authlete 3 only feature.
-
-### Batch Credential Endpoint (/api/batch_credential)
-
-- Will always return the response from the primary AuthleteApi (Authlete 3 API). Since this is an Authlete 3 only feature.
-
-### Backchannel Endpoint (/api/backchannel/authentication)
-
-### Backchannel Callback Endpoint (/api/backchannel/authentication/callback)
-
-### Device Endpoints (/api/device/authorization - /api/device/complete - /api/device/verification)
-
-### OBB Endpoints (/api/obb/accounts - /api/consents - /api/obb/fapi2base-accounts - /api/obb/resources)
-
-### VCI Endpoints (/api/vci/jwks)
-
-### Credential Offer Endpoint (/api/offer/{id} - /api/offer/issue)
-
-### Deferred Credential Endpoint (/api/deferred_credential)
 
 ------------------------------------------------------------------------------------------------------------------------
 
