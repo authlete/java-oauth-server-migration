@@ -6,6 +6,8 @@ import com.authlete.common.conf.AuthleteApiVersion;
 import com.authlete.common.conf.AuthleteConfiguration;
 import com.authlete.common.conf.AuthletePropertiesConfiguration;
 import com.authlete.common.conf.AuthleteSimpleConfiguration;
+import com.authlete.common.util.PropertiesLoader;
+import com.authlete.common.util.TypedProperties;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
@@ -24,7 +26,7 @@ import java.util.function.Function;
  */
 public class AuthleteApiHolder
 {
-    private static final String V2_BASE_URL = "v2_base_url";
+    private static final String BASE_URL_SECONDARY = "base_url.secondary";
     private static final Gson gson = new Gson();
     private static final Type type = new TypeToken<Map<String, Object>>() {}.getType();
     private static final AuthleteApiHolder INSTANCE = new AuthleteApiHolder();
@@ -47,15 +49,15 @@ public class AuthleteApiHolder
         primaryAuthleteApi = AuthleteApiFactory.create(initialConfiguration);
         logger.info("Initializing configuration for Authlete Api with version [{}]", initialConfiguration.getApiVersion());
 
-        // If V3 is specified and also properties for V2 are provided, we will attempt to create a configuration for
-        // and connect to both configured Authlete API servers
-        if (AuthleteApiVersion.V3.name().equalsIgnoreCase(initialConfiguration.getApiVersion())
-                && initialConfiguration.getServiceApiSecret() != null && !initialConfiguration.getServiceApiSecret().isEmpty())
+        // If V3 is specified the base secondary endpoint is also provided we should initialise
+        String secondaryBaseUrl = getSecondaryBaseUrl();
+        if (AuthleteApiVersion.V3.name().equalsIgnoreCase(initialConfiguration.getApiVersion()) && secondaryBaseUrl != null)
         {
-            logger.info("Api Version set to [{}] but [{}] supported properties have also been provided. Initializing migration supported configuration with configured both Authlete 2.3 and Authlete 3 applications.",
-                    initialConfiguration.getApiVersion(), AuthleteApiVersion.V2);
+            logger.info("Api Version set to [{}] but the [{}] property value has also been provided. Initializing migration support mode using the provided Authlete 2.3 (secondary) [{}] and Authlete 3 (primary) [{}] endpoints.",
+                    initialConfiguration.getApiVersion(), BASE_URL_SECONDARY, secondaryBaseUrl, initialConfiguration.getBaseUrl());
+
             AuthleteConfiguration v2Configuration = new AuthleteSimpleConfiguration()
-                    .setBaseUrl(System.getProperty(V2_BASE_URL, initialConfiguration.getBaseUrl()))
+                    .setBaseUrl(secondaryBaseUrl)
                     .setApiVersion(AuthleteApiVersion.V2.name())
                     .setServiceApiSecret(initialConfiguration.getServiceApiSecret())
                     .setServiceApiKey(initialConfiguration.getServiceApiKey())
@@ -70,6 +72,29 @@ public class AuthleteApiHolder
         {
             secondaryAuthleteApi = null;
         }
+    }
+
+    /**
+     * Taken from {@link AuthletePropertiesConfiguration}
+     * @return the configured properties file name
+     */
+    private static String getFile()
+    {
+        String file = System.getProperty("authlete.configuration.file");
+        return file != null && !file.isEmpty() ? file : "authlete.properties";
+    }
+
+    private String getSecondaryBaseUrl()
+    {
+        String propertiesFile = getFile();
+        TypedProperties props = PropertiesLoader.load(propertiesFile);
+
+        if (props == null)
+        {
+            return null;
+        }
+
+        return props.getString(BASE_URL_SECONDARY);
     }
 
     public static AuthleteApiHolder getInstance()
@@ -115,7 +140,8 @@ public class AuthleteApiHolder
             primaryResponse = null;
         }
         boolean primaryIsError = primaryResponse == null || isErrorFunction.apply(primaryResponse, getResponseAsMap(primaryResponse));
-        if (callerStrategy == CallerStrategy.ONLY_PRIMARY
+        if (secondaryAuthleteApi == null
+            || callerStrategy == CallerStrategy.ONLY_PRIMARY
             || (callerStrategy == CallerStrategy.UNTIL_SUCCESS && !primaryIsError))
         {
             return primaryResponse;

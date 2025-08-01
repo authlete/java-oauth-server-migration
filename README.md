@@ -14,7 +14,7 @@ Please refer to the [main repository](https://github.com/authlete/java-oauth-ser
 the OAuth server and its implementation. This repository primarily focuses on the new changes made in order to 
 support zero-downtime migration.
 
-The application accepts arguments for both the version 3 Authlete server as well as the 2.3 Authlete server. Connecting
+The application accepts arguments for both the version 3 Authlete server and the 2.3 Authlete server. Connecting
 to two Authlete servers will allow the OAuth server application to handle requests first via the connected 3.0 Authlete 
 server, if there is an authentication related or general error then application will then attempt to satisfy the request
 via the Authlete 2.3 server.
