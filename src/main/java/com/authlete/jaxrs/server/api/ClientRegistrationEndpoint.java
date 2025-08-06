@@ -36,9 +36,9 @@ import javax.ws.rs.core.Response.Status;
 import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.util.Utils;
 import com.authlete.jaxrs.BaseClientRegistrationEndpoint;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
-import com.authlete.jaxrs.server.CallerStrategy;
-import com.authlete.jaxrs.server.ResponseReturnStrategy;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.CallerStrategy;
+import com.authlete.jaxrs.migration.ResponseReturnStrategy;
 import com.authlete.jaxrs.server.obb.util.ObbUtils;
 
 
@@ -79,7 +79,7 @@ public class ClientRegistrationEndpoint extends BaseClientRegistrationEndpoint
 
             // Execute the "register" operation.
             return handleRegister(authleteApi, jsonResponse, authorization);
-        }, (res, body) -> res.getStatus() >= Status.BAD_REQUEST.getStatusCode());
+        }, (res, body, throwable) -> throwable != null || res.getStatus() >= Status.BAD_REQUEST.getStatusCode());
     }
 
 

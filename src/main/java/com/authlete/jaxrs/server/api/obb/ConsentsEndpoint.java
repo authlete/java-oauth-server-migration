@@ -32,7 +32,7 @@ import javax.ws.rs.core.Response;
 import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.api.AuthleteApiException;
 import com.authlete.common.dto.IntrospectionResponse;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.obb.database.ConsentDao;
 import com.authlete.jaxrs.server.obb.model.Consent;
 import com.authlete.jaxrs.server.obb.model.CreateConsent;

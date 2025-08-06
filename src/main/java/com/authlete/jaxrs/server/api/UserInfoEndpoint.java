@@ -29,7 +29,7 @@ import javax.ws.rs.core.Response;
 
 import com.authlete.jaxrs.BaseUserInfoEndpoint;
 import com.authlete.jaxrs.UserInfoRequestHandler.Params;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.util.JaxRsUtils;
 
 

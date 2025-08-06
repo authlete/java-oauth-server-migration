@@ -31,7 +31,7 @@ import javax.ws.rs.core.Response;
 import com.authlete.common.dto.BackchannelAuthenticationCompleteRequest.Result;
 import com.authlete.common.types.User;
 import com.authlete.jaxrs.BackchannelAuthenticationCompleteRequestHandler;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.ad.dto.AsyncAuthenticationCallbackRequest;
 
 

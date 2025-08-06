@@ -24,9 +24,9 @@ import javax.ws.rs.core.Response;
 
 import com.authlete.common.dto.CredentialOfferInfoRequest;
 import com.authlete.jaxrs.BaseCredentialOfferUriEndpoint;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
-import com.authlete.jaxrs.server.CallerStrategy;
-import com.authlete.jaxrs.server.ResponseReturnStrategy;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.CallerStrategy;
+import com.authlete.jaxrs.migration.ResponseReturnStrategy;
 
 
 @Path("/api/offer/{identifier}")

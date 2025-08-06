@@ -31,7 +31,7 @@ import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.util.Utils;
 import com.authlete.jaxrs.BaseTokenEndpoint;
 import com.authlete.jaxrs.TokenRequestHandler.Params;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.spi.TokenRequestHandlerSpi;
 
 

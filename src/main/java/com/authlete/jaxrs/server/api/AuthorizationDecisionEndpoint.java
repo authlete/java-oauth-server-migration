@@ -34,7 +34,7 @@ import com.authlete.common.dto.Client;
 import com.authlete.common.types.User;
 import com.authlete.jaxrs.AuthorizationDecisionHandler.Params;
 import com.authlete.jaxrs.BaseAuthorizationDecisionEndpoint;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.util.ProcessingUtil;
 import com.authlete.jaxrs.spi.AuthorizationDecisionHandlerSpi;
 

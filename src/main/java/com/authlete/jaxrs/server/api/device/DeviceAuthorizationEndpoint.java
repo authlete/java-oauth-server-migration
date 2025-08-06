@@ -29,7 +29,7 @@ import javax.ws.rs.core.Response;
 
 import com.authlete.jaxrs.BaseDeviceAuthorizationEndpoint;
 import com.authlete.jaxrs.DeviceAuthorizationRequestHandler.Params;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 
 
 /**

@@ -24,7 +24,7 @@ import javax.ws.rs.core.Response;
 
 import com.authlete.common.dto.FederationRegistrationRequest;
 import com.authlete.jaxrs.BaseFederationRegistrationEndpoint;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 
 
 /**

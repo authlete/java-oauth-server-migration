@@ -37,9 +37,9 @@ import com.authlete.common.dto.CredentialBatchParseResponse;
 import com.authlete.common.dto.CredentialIssuanceOrder;
 import com.authlete.common.dto.CredentialRequestInfo;
 import com.authlete.common.dto.IntrospectionResponse;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
-import com.authlete.jaxrs.server.CallerStrategy;
-import com.authlete.jaxrs.server.ResponseReturnStrategy;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.CallerStrategy;
+import com.authlete.jaxrs.migration.ResponseReturnStrategy;
 import com.authlete.jaxrs.server.util.ExceptionUtil;
 import com.authlete.jaxrs.server.util.ResponseUtil;
 

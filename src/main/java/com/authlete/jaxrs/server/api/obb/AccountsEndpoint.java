@@ -26,7 +26,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import com.authlete.common.dto.IntrospectionResponse;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.obb.model.AccountData;
 import com.authlete.jaxrs.server.obb.model.Links;
 import com.authlete.jaxrs.server.obb.model.Meta;

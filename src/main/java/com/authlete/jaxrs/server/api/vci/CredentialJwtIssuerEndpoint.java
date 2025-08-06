@@ -24,7 +24,7 @@ import javax.ws.rs.core.Response;
 import com.authlete.common.api.AuthleteApi;
 import com.authlete.common.dto.CredentialJwtIssuerMetadataRequest;
 import com.authlete.common.dto.CredentialJwtIssuerMetadataResponse;
-import com.authlete.jaxrs.server.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.util.ResponseUtil;
 
 
