@@ -29,7 +29,7 @@ public class AuthleteApiHolder
     private static final String BASE_URL_SECONDARY = "base_url.secondary";
     private static final Gson gson = new Gson();
     private static final Type type = new TypeToken<Map<String, Object>>() {}.getType();
-    private static final AuthleteApiHolder INSTANCE = new AuthleteApiHolder();
+    private static AuthleteApiHolder INSTANCE = null;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -49,7 +49,8 @@ public class AuthleteApiHolder
         primaryAuthleteApi = AuthleteApiFactory.create(initialConfiguration);
         logger.info("Initializing configuration for Authlete Api with version [{}]", initialConfiguration.getApiVersion());
 
-        // If V3 is specified the base secondary endpoint is also provided we should initialise
+        // If V3 is specified and the base secondary endpoint is also provided we should initialise a secondary api
+        // this assumes the secondary is always version 2
         String secondaryBaseUrl = getSecondaryBaseUrl();
         if (AuthleteApiVersion.V3.name().equalsIgnoreCase(initialConfiguration.getApiVersion()) && secondaryBaseUrl != null)
         {
@@ -99,6 +100,20 @@ public class AuthleteApiHolder
 
     public static AuthleteApiHolder getInstance()
     {
+        if (INSTANCE != null)
+        {
+            return INSTANCE;
+        }
+
+        synchronized (AuthleteApiHolder.class)
+        {
+            if (INSTANCE != null)
+            {
+                return INSTANCE;
+            }
+            INSTANCE = new AuthleteApiHolder();
+        }
+
         return INSTANCE;
     }
 
@@ -162,7 +177,8 @@ public class AuthleteApiHolder
         }
         boolean secondaryIsError = secondaryResponse == null || isErrorFunction.apply(secondaryResponse, getResponseAsMap(secondaryResponse));
 
-        // We won't check for ResponseReturnStrategy.PRIMARY since returning v3 response is the default fall through case
+        // We won't check for ResponseReturnStrategy.PRIMARY since returning the primary response is the default
+        // fall through case
 
         if (strategy == ResponseReturnStrategy.SECONDARY)
         {
@@ -227,7 +243,7 @@ public class AuthleteApiHolder
             }
         }
 
-        // Always return v3 response by default
+        // Always return primary response by default
         return primaryResponse;
     }
 
@@ -246,7 +262,7 @@ public class AuthleteApiHolder
         }
         catch (Throwable t)
         {
-            // If we fail to parse its probably a html response not json to fall through and return an empty map
+            // If we fail to parse its probably a html response not json so fall through and return an empty map
         }
         return new HashMap<>();
     }

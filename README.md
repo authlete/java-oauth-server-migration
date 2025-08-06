@@ -42,7 +42,7 @@ just support the new version 3 of Authlete server.
 
 2. Edit the configuration file (`authlete.properties`) to set the API credentials. To enable migration support the 
 following properties need to be set:
-   - `v2_base_url` - The base URL to access the Authlete 2.3 application
+   - `base_url.secondary` - The base URL to access the Authlete 2.3 application
    - `base_url` - The base URL to access the Authlete 3 application
    - `service.api_key` - The Service ID, this ID must be the same in both Authlete 2.3 and 3.0 applications (it can be
 created manually in Authlete 3 or imported via the Organization settings)
