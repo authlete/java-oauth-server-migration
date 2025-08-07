@@ -22,9 +22,10 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
+import com.authlete.common.api.AuthleteApi;
+import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.FederationRegistrationRequest;
 import com.authlete.jaxrs.BaseFederationRegistrationEndpoint;
-import com.authlete.jaxrs.migration.AuthleteApiHolder;
 
 
 /**
@@ -89,7 +90,8 @@ public class FederationRegistrationEndpoint extends BaseFederationRegistrationEn
     public Response entityConfiguration(String jwt)
     {
         // Client registration by a relying party's entity configuration.
-        return AuthleteApiHolder.getInstance().withApi(authleteApi -> handle(authleteApi, request().setEntityConfiguration(jwt)));
+        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
+        return handle(authleteApi, request().setEntityConfiguration(jwt));
     }
 
 
@@ -98,7 +100,8 @@ public class FederationRegistrationEndpoint extends BaseFederationRegistrationEn
     public Response trustChain(String json)
     {
         // Client registration by a relying party's trust chain.
-        return AuthleteApiHolder.getInstance().withApi(authleteApi -> handle(authleteApi, request().setTrustChain(json)));
+        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
+        return handle(authleteApi, request().setTrustChain(json));
     }
 
 

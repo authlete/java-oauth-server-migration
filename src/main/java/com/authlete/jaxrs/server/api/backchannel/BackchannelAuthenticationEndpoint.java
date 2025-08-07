@@ -27,9 +27,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import com.authlete.common.api.AuthleteApi;
+import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.jaxrs.BackchannelAuthenticationRequestHandler.Params;
 import com.authlete.jaxrs.BaseBackchannelAuthenticationEndpoint;
-import com.authlete.jaxrs.migration.AuthleteApiHolder;
 
 
 /**
@@ -51,14 +52,14 @@ public class BackchannelAuthenticationEndpoint extends BaseBackchannelAuthentica
             MultivaluedMap<String, String> parameters)
     {
         // Authlete API
-        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
-            // Parameters for Authlete's /backchannel/authentication API
-            Params params = buildParams(request, parameters);
+        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
 
-            // Handle the backchannel authentication request.
-            return handle(authleteApi,
-                    new BackchannelAuthenticationRequestHandlerSpiImpl(), params);
-        });
+        // Parameters for Authlete's /backchannel/authentication API
+        Params params = buildParams(request, parameters);
+
+        // Handle the backchannel authentication request.
+        return handle(authleteApi,
+                new BackchannelAuthenticationRequestHandlerSpiImpl(), params);
     }
 
 

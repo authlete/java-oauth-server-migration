@@ -28,8 +28,9 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import com.authlete.common.api.AuthleteApi;
+import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.jaxrs.BaseAuthorizationEndpoint;
-import com.authlete.jaxrs.migration.AuthleteApiHolder;
 
 
 /**
@@ -105,7 +106,7 @@ public class AuthorizationEndpoint extends BaseAuthorizationEndpoint
      */
     private Response handle(HttpServletRequest request, MultivaluedMap<String, String> parameters)
     {
-        return AuthleteApiHolder.getInstance().withApi(authleteApi -> handle(authleteApi,
-                new AuthorizationRequestHandlerSpiImpl(request), parameters));
+        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
+        return handle(authleteApi, new AuthorizationRequestHandlerSpiImpl(request), parameters);
     }
 }

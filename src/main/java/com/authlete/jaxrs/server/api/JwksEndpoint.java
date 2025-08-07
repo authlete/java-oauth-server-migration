@@ -21,10 +21,9 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
+import com.authlete.common.api.AuthleteApi;
+import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.jaxrs.BaseJwksEndpoint;
-import com.authlete.jaxrs.migration.AuthleteApiHolder;
-import com.authlete.jaxrs.migration.CallerStrategy;
-import com.authlete.jaxrs.migration.ResponseReturnStrategy;
 
 
 /**
@@ -63,6 +62,7 @@ public class JwksEndpoint extends BaseJwksEndpoint
     public Response get()
     {
         // Handle the JWK Set request.
-        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, (this::handle));
+        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
+        return handle(authleteApi);
     }
 }

@@ -28,10 +28,11 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import com.authlete.common.api.AuthleteApi;
+import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.BackchannelAuthenticationCompleteRequest.Result;
 import com.authlete.common.types.User;
 import com.authlete.jaxrs.BackchannelAuthenticationCompleteRequestHandler;
-import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.ad.dto.AsyncAuthenticationCallbackRequest;
 
 
@@ -106,20 +107,20 @@ public class BackchannelAuthenticationCallbackEndpoint
         String errorDescription = determineErrorDescription(request);
 
         // Complete the authentication and authorization process.
-        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
-            new BackchannelAuthenticationCompleteRequestHandler(
-                    authleteApi,
-                    new BackchannelAuthenticationCompleteHandlerSpiImpl(
-                            result, user, authTime, acrs, errorDescription, null)
-            )
-                    .handle(ticket, claimNames);
+        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
 
-            // Delete the stored information.
-            removeAuthInfo(requestId);
+        new BackchannelAuthenticationCompleteRequestHandler(
+                authleteApi,
+                new BackchannelAuthenticationCompleteHandlerSpiImpl(
+                        result, user, authTime, acrs, errorDescription, null)
+        )
+                .handle(ticket, claimNames);
 
-            // 204 No Content.
-            return noContent();
-        });
+        // Delete the stored information.
+        removeAuthInfo(requestId);
+
+        // 204 No Content.
+        return noContent();
     }
 
 

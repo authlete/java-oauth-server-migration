@@ -29,9 +29,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import com.authlete.jaxrs.migration.AuthleteApiHolder;
-import com.authlete.jaxrs.migration.CallerStrategy;
-import com.authlete.jaxrs.migration.ResponseReturnStrategy;
+import com.authlete.common.api.AuthleteApi;
+import com.authlete.common.api.AuthleteApiFactory;
 import org.glassfish.jersey.server.mvc.Viewable;
 import com.authlete.common.dto.CredentialOfferCreateRequest;
 import com.authlete.common.dto.CredentialOfferCreateResponse;
@@ -78,25 +77,24 @@ public class CredentialOfferIssueEndpoint extends BaseEndpoint
 
         final CredentialOfferCreateRequest createRequest = model.toRequest(user);
 
-        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, authleteApi -> {
-            final CredentialOfferCreateResponse response = authleteApi.credentialOfferCreate(createRequest);
+        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
+        final CredentialOfferCreateResponse response = authleteApi.credentialOfferCreate(createRequest);
 
-            switch (response.getAction())
-            {
-                case CREATED:
-                    model.setInfo(response.getInfo());
-                    model.setUser(user);
+        switch (response.getAction())
+        {
+            case CREATED:
+                model.setInfo(response.getInfo());
+                model.setUser(user);
 
-                    // Create a Viewable instance that represents the credential offer page.
-                    // Viewable is a class provided by Jersey for MVC.
-                    final Viewable viewable = new Viewable("/credential-offer", model);
+                // Create a Viewable instance that represents the credential offer page.
+                // Viewable is a class provided by Jersey for MVC.
+                final Viewable viewable = new Viewable("/credential-offer", model);
 
-                    // Create a response that has the viewable as its content.
-                    return Response.ok(viewable, MediaType.TEXT_HTML_TYPE.withCharset("UTF-8")).build();
+                // Create a response that has the viewable as its content.
+                return Response.ok(viewable, MediaType.TEXT_HTML_TYPE.withCharset("UTF-8")).build();
 
-                default:
-                    throw ExceptionUtil.badRequestException("An exception occured: " + response.getResultMessage());
-            }
-        });
+            default:
+                throw ExceptionUtil.badRequestException("An exception occured: " + response.getResultMessage());
+        }
     }
 }

@@ -29,6 +29,8 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import com.authlete.common.api.AuthleteApi;
+import com.authlete.common.api.AuthleteApiFactory;
+import com.authlete.common.api.migration.MigrationSupportedAuthleteApiImpl;
 import com.authlete.common.dto.CredentialDeferredIssueRequest;
 import com.authlete.common.dto.CredentialDeferredIssueResponse;
 import com.authlete.common.dto.CredentialDeferredParseRequest;
@@ -37,9 +39,6 @@ import com.authlete.common.dto.CredentialIssuanceOrder;
 import com.authlete.common.dto.CredentialRequestInfo;
 import com.authlete.common.dto.IntrospectionResponse;
 import com.authlete.common.types.ErrorCode;
-import com.authlete.jaxrs.migration.AuthleteApiHolder;
-import com.authlete.jaxrs.migration.CallerStrategy;
-import com.authlete.jaxrs.migration.ResponseReturnStrategy;
 import com.authlete.jaxrs.server.util.ExceptionUtil;
 import com.authlete.jaxrs.server.util.ResponseUtil;
 import com.authlete.jaxrs.server.vc.OrderContext;
@@ -56,7 +55,9 @@ public class DeferredCredentialEndpoint extends AbstractCredentialEndpoint
             @HeaderParam("DPoP") String dpop,
             String requestContent)
     {
-        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, authleteApi -> {
+        MigrationSupportedAuthleteApiImpl migrationApi = AuthleteApiFactory.getMigrationSupportedApi();
+
+        return migrationApi.withApis(authleteApi -> {
             // Extract the access token from the request.
             String accessToken = extractAccessToken(authorization, null);
 
