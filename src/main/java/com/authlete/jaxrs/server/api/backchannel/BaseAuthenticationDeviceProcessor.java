@@ -22,12 +22,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.Scope;
 import com.authlete.common.dto.BackchannelAuthenticationCompleteRequest.Result;
 import com.authlete.common.types.User;
 import com.authlete.jaxrs.BackchannelAuthenticationCompleteRequestHandler;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.ServerConfig;
 import com.authlete.jaxrs.server.ad.AuthenticationDevice;
 
@@ -297,14 +296,15 @@ public abstract class BaseAuthenticationDeviceProcessor implements Authenticatio
      */
     protected void complete(Result result, Date authTime, String errorDescription, URI errorUri)
     {
-        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
-
-        new BackchannelAuthenticationCompleteRequestHandler(
-                authleteApi,
-                new BackchannelAuthenticationCompleteHandlerSpiImpl(
-                        result, mUser, authTime, mAcrs, errorDescription, errorUri)
-        )
-                .handle(mTicket, mClaimNames);
+        AuthleteApiHolder.getInstance().withApi(authleteApi -> {
+            new BackchannelAuthenticationCompleteRequestHandler(
+                    authleteApi,
+                    new BackchannelAuthenticationCompleteHandlerSpiImpl(
+                            result, mUser, authTime, mAcrs, errorDescription, errorUri)
+            )
+                    .handle(mTicket, mClaimNames);
+            return null;
+        });
     }
 
 

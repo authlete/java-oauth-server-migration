@@ -11,10 +11,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.jaxrs.BasePushedAuthReqEndpoint;
 import com.authlete.jaxrs.PushedAuthReqHandler.Params;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.CallerStrategy;
+import com.authlete.jaxrs.migration.ResponseReturnStrategy;
 
 
 /**
@@ -41,13 +42,13 @@ public class PushedAuthReqEndpoint extends BasePushedAuthReqEndpoint
             MultivaluedMap<String, String> parameters)
     {
         // Authlete API
-        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
+            // Parameters for Authlete's pushed_auth_req API.
+            Params params = buildParams(request, parameters);
 
-        // Parameters for Authlete's pushed_auth_req API.
-        Params params = buildParams(request, parameters);
-
-        // Handle the PAR request.
-        return handle(authleteApi, params);
+            // Handle the PAR request.
+            return handle(authleteApi, params);
+        });
     }
 
 

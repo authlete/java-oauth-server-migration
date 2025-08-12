@@ -210,7 +210,7 @@ public class UserEntity implements User, Serializable
                 .setCountry(addr.getCountry())
                 .setFormatted(addr.getFormatted())
                 .setLocality(addr.getLocality())
-                .setPostalCode(addr.getPostalCode())
+                .setPostaCode(addr.getPostalCode())
                 .setRegion(addr.getRegion())
                 .setStreetAddress(addr.getStreetAddress())
                 ;

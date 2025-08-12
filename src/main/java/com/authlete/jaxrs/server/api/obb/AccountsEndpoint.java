@@ -25,9 +25,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.IntrospectionResponse;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.obb.model.AccountData;
 import com.authlete.jaxrs.server.obb.model.Links;
 import com.authlete.jaxrs.server.obb.model.Meta;
@@ -53,19 +52,19 @@ public class AccountsEndpoint
                 ObbUtils.computeOutgoingInteractionId(code, incomingInteractionId);
 
         // Validate the access token.
-        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
+            IntrospectionResponse info = ObbUtils.validateAccessToken(
+                    outgoingInteractionId, code, authleteApi, request, "accounts");
 
-        IntrospectionResponse info = ObbUtils.validateAccessToken(
-                outgoingInteractionId, code, authleteApi, request, "accounts");
+            // Make sure that the access token has a "consent:{consentId}" scope.
+            ensureConsentScope(outgoingInteractionId, code, info);
 
-        // Make sure that the access token has a "consent:{consentId}" scope.
-        ensureConsentScope(outgoingInteractionId, code, info);
+            // Build a response body.
+            ResponseAccountList body = buildResponseBody();
 
-        // Build a response body.
-        ResponseAccountList body = buildResponseBody();
-
-        // Build a successful response.
-        return ObbUtils.ok(outgoingInteractionId, body);
+            // Build a successful response.
+            return ObbUtils.ok(outgoingInteractionId, body);
+        });
     }
 
 

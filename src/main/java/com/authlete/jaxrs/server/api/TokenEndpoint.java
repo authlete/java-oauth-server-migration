@@ -28,11 +28,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
-import com.authlete.common.api.migration.MigrationSupportedAuthleteApiImpl;
 import com.authlete.common.util.Utils;
 import com.authlete.jaxrs.BaseTokenEndpoint;
 import com.authlete.jaxrs.TokenRequestHandler.Params;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.spi.TokenRequestHandlerSpi;
 
 
@@ -81,9 +80,7 @@ public class TokenEndpoint extends BaseTokenEndpoint
             MultivaluedMap<String, String> parameters)
     {
         // Authlete API
-        MigrationSupportedAuthleteApiImpl migrationApi = AuthleteApiFactory.getMigrationSupportedApi();
-
-        return migrationApi.withApis(authleteApi -> {
+        return AuthleteApiHolder.getInstance().withApi(authleteApi -> {
             // Process the token request in a standard way.
             Response response = processTokenRequest(authleteApi, request, parameters);
 

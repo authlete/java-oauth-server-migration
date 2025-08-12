@@ -22,10 +22,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 
-import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.CredentialOfferInfoRequest;
 import com.authlete.jaxrs.BaseCredentialOfferUriEndpoint;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
+import com.authlete.jaxrs.migration.CallerStrategy;
+import com.authlete.jaxrs.migration.ResponseReturnStrategy;
 
 
 @Path("/api/offer/{identifier}")
@@ -35,7 +36,7 @@ public class CredentialOfferEndpoint extends BaseCredentialOfferUriEndpoint
     public Response get(
             @PathParam("identifier") String identifier)
     {
-        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
-        return handle(authleteApi, new CredentialOfferInfoRequest().setIdentifier(identifier));
+        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY,
+                authleteApi -> handle(authleteApi, new CredentialOfferInfoRequest().setIdentifier(identifier)));
     }
 }

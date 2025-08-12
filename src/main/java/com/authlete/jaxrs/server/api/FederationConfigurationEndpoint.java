@@ -21,11 +21,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
-import com.authlete.common.api.AuthleteApi;
-import com.authlete.common.api.AuthleteApiFactory;
 import com.authlete.common.dto.FederationConfigurationRequest;
 import com.authlete.common.types.EntityType;
 import com.authlete.jaxrs.BaseFederationConfigurationEndpoint;
+import com.authlete.jaxrs.migration.AuthleteApiHolder;
 
 
 /**
@@ -80,7 +79,6 @@ public class FederationConfigurationEndpoint extends BaseFederationConfiguration
     public Response get()
     {
         // Handle the request to the endpoint.
-        AuthleteApi authleteApi = AuthleteApiFactory.getMigrationSupportedApi();
-        return handle(authleteApi, REQUEST);
+        return AuthleteApiHolder.getInstance().withApi((authleteApi -> handle(authleteApi, REQUEST)));
     }
 }
