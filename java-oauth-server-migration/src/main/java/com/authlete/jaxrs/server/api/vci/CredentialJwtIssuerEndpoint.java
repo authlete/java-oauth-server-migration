@@ -26,6 +26,8 @@ import com.authlete.common.dto.CredentialJwtIssuerMetadataRequest;
 import com.authlete.common.dto.CredentialJwtIssuerMetadataResponse;
 import com.authlete.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.util.ResponseUtil;
+import com.authlete.migration.CallerStrategy;
+import com.authlete.migration.ResponseReturnStrategy;
 
 
 @Path("/.well-known/{path : jwt-issuer|jwt-vc-issuer}")
@@ -34,7 +36,7 @@ public class CredentialJwtIssuerEndpoint extends AbstractCredentialEndpoint
     @GET
     public Response get()
     {
-        return AuthleteApiHolder.getInstance().withApi(this::metadata);
+        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, this::metadata);
     }
 
 

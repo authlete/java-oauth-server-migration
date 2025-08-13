@@ -106,9 +106,6 @@ public class ConfigurationEndpoint extends BaseConfigurationEndpoint
             @QueryParam("patch") String patch
             )
     {
-        // An AuthleteApi instance to access Authlete APIs.
-
-
         // If either or both of the 'pretty' request parameter
         // and the 'patch' request parameter are given.
         if ((pretty != null && !pretty.isEmpty()) ||
@@ -120,7 +117,7 @@ public class ConfigurationEndpoint extends BaseConfigurationEndpoint
         }
 
         // Call the /service/configuration API with HTTP GET.
-        return AuthleteApiHolder.getInstance().withApi(this::handle);
+        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, this::handle);
     }
 
 

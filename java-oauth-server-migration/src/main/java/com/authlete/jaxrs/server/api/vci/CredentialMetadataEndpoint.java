@@ -27,6 +27,8 @@ import com.authlete.common.dto.CredentialIssuerMetadataResponse;
 import com.authlete.migration.AuthleteApiHolder;
 import com.authlete.jaxrs.server.util.ExceptionUtil;
 import com.authlete.jaxrs.server.util.ResponseUtil;
+import com.authlete.migration.CallerStrategy;
+import com.authlete.migration.ResponseReturnStrategy;
 
 
 @Path("/.well-known/openid-credential-issuer")
@@ -35,7 +37,7 @@ public class CredentialMetadataEndpoint extends AbstractCredentialEndpoint
     @GET
     public Response get()
     {
-        return AuthleteApiHolder.getInstance().withApi(this::metadata);
+        return AuthleteApiHolder.getInstance().withApi(CallerStrategy.ONLY_PRIMARY, ResponseReturnStrategy.PRIMARY, this::metadata);
     }
 
 
