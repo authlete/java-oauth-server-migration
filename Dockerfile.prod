@@ -6,7 +6,7 @@ WORKDIR /build
 COPY pom.xml .
 RUN mvn -Dmaven.test.skip=true -Dmaven.javadoc.skip=true dependency:go-offline
 COPY src/ /build/src/
-RUN mvn -Dmaven.test.skip=true -Dmaven.javadoc.skip=true package
+RUN mvn -Dmaven.test.skip=true -Dmaven.javadoc.skip=true install
 
 
 FROM jetty:9.4.56-jre21-eclipse-temurin
@@ -15,4 +15,4 @@ USER root
 COPY certs/ certs/
 RUN certs/import-certificate.sh certs/Open_Banking_Brasil_Sandbox_Root_G2.pem
 USER jetty
-COPY --from=builder /build/target/*.war /var/lib/jetty/webapps/ROOT.war
+COPY --from=builder java-oauth-server-migration/build/target/*.war /var/lib/jetty/webapps/ROOT.war

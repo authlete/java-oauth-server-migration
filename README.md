@@ -5,34 +5,32 @@ zero-downtime migration from Authlete 2.3 to 3.0.
 
 ## Overview
 
-This is an authorization server implementation is based on 
-[Java OAuth Server (java-oauth-server)](https://github.com/authlete/java-oauth-server)
-implementation and extended to demonstrate how zero-downtime migration can be achieved between Authlete server version 
-2.3 and 3.0.
-
-Please refer to the [main repository](https://github.com/authlete/java-oauth-server) for further information about 
-the OAuth server and its implementation. This repository primarily focuses on the new changes made in order to 
+Please refer to the [main repository](https://github.com/authlete/java-oauth-server) for further information about
+the OAuth server and its implementation. This repository primarily focuses on the changes made in order to
 support zero-downtime migration.
 
-The application accepts arguments for both the version 3 Authlete server and the 2.3 Authlete server. Connecting
-to two Authlete servers will allow the OAuth server application to handle requests first via the connected 3.0 Authlete 
-server, if there is an authentication related or general error then application will then attempt to satisfy the request
-via the Authlete 2.3 server.
+This is an authorization server implementation is based on the
+[Java OAuth Server (java-oauth-server)](https://github.com/authlete/java-oauth-server)
+implementation and extended to demonstrate how zero-downtime migration can be achieved between Authlete server versions 
+2.3 and 3.0.
 
-The general approach is to assume that the version 3 Authlete server is able to handle all requests. During the migration
-period it may be unable to successfully handle every request for various reasons such as:
-- Client has not been created or migrated into the Authlete 3 server
-- Client's token have not been created/updated in the Authlete 3 server
-- Other configuration made in Authlete 2.3 has not been applied to the Authlete 3 server application
+The application configures a primary (version 3) Authlete server and a secondary (version 2.3) Authlete server. 
+Connecting to both Authlete servers allows the OAuth server to attempt to handle requests initially with 
+the primary Authlete server, if there is an authentication related or other specific errors then the oauth server 
+will attempt to satisfy the request via the secondary Authlete server.
 
-While specific clients and/or their tokens are being migrated to the Authlete 3 server, the OAuth application will 
-refer to the 2.3 Authlete server to satisfy these specific requests. This should continue until ideally all requests
-are handled only by the Authlete 3 server.
+During the migration period the primary Authlete server may be unable to successfully handle every request for various 
+reasons such as:
+- The client has not been created or migrated into the primary Authlete server
+- The client's token(s) have not been created/updated in the primary Authlete server
+- Other configuration that was made in the secondary Authlete server (version 2.3) has not been applied/configured in 
+the primary Authlete server
 
-Once all configuration has been moved and you are satisfied with the configuration, the Authlete 2.3 service can be 
-decommissioned. In future maintenance periods, the properties for the OAuth server can remove Authlete 2.3 configuration
-or can even move back to the [main repository's](https://github.com/authlete/java-oauth-server) implementation to 
-just support the new version 3 of Authlete server.
+In these scenarios, the secondary Authlete server would be able to successfully handle these requests and provide an
+appropriate response to the oauth server.
+
+Once migration is complete, all requests should be internally be handled by the primary Authlete server and the 
+secondary server would be handling limited or no requests.
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -40,27 +38,46 @@ just support the new version 3 of Authlete server.
 
 1. Similarly to the [main repository's](https://github.com/authlete/java-oauth-server), you can clone this repository.
 
-2. Edit the configuration file (`authlete.properties`) to set the API credentials. To enable migration support the 
-following properties need to be set:
-   - `base_url.secondary` - The base URL to access the Authlete 2.3 application
-   - `base_url` - The base URL to access the Authlete 3 application
-   - `service.api_key` - The Service ID, this ID must be the same in both Authlete 2.3 and 3.0 applications (it can be
-created manually in Authlete 3 or imported via the Organization settings)
-   - `service.api_secret` (Authlete 2.3) the service secret from the Authlete 2.3 console
+2. This repository is made up of two subprojects:
+   1. `authlete-migration-support` - which contains support code to handle primary and secondary `AuthleteApi` 
+   initialization along with forwarding requests to the secondary `AuthleteApi` if the primary returns a fail response.
+   2. `java-oauth-server-migration` - the Oauth server implementation which uses the `authlete-migration-support` library
+   to create an oauth server implementation that can support this migration phase without any downtime.
+
+3. In the `java-oauth-server-migration` subproject, edit the configuration file (`authlete.properties`) to set the API 
+credentials. To enable migration support the following properties need to be set in order to enable migration:
+   - `base_url.secondary` - The base URL to access the secondary Authlete API (version 2.3)
+   - `base_url` - The base URL to access the primary Authlete server (version 3)
+   - `service.api_key` - The Service ID, this ID must be the same in both the primary and secondary Authlete servers 
+(it can be created manually in Authlete 3 or imported via the Organization settings)
+   - `service.api_secret` The service secret from the secondary Authlete server (2.3 only credential)
    - `api_version` - Should be set to ***V3***
-   - `service.access_token` (Authlete 3.0) the service token from the Authlete 3 console
+   - `service.access_token` The service token from the primary (Authlete 3) console (3.0 only credential)
 
-3. Make sure that you have installed [maven][42] and set `JAVA_HOME` properly.
+4. Make sure that you have installed [maven][42] and set `JAVA_HOME` properly.
 
-4. Start the authorization server on [http://localhost:8080][38].
+5. From the `project's root directory` run the following commands to start the authorization server on 
+[http://localhost:8080][38].
 
-        $ mvn jetty:run &
+Building the authorization server (From the root project directory `java-oauth-server-migration`):
+```sh
+`java-oauth-server-migration` $ mvn clean install
+```
+
+Running the authorization server (From the `java-oauth-server-migration` subdirectory
+(`java-oauth-server-migration/java-oauth-server-migration`)):
+```sh
+`java-oauth-server-migration` $ mvn jetty:run &
+```
 
 ### Run with Docker
 
-If you prefer to use Docker, just run the following command after the step 2.
+If you prefer to use Docker, just run the following command after the step 3 from the `java-oauth-server-migration` subdirectory
+(`java-oauth-server-migration/java-oauth-server-migration`).
 
-    $ docker-compose up
+```sh
+$ docker-compose up
+```
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -120,13 +137,13 @@ call has been made to both then the application determines which response to ret
 
 Any endpoints that have non-default implementations to determine an endpoint failure are documented explicitly below.
 
-By default, a response from the AuthleteApi is determined by its response code having a value greater or equal to `400`.
-Other conditions that contribute to an error response can be specified per endpoint.
+By default, a response from the AuthleteApi is determined by it's response status code having a value greater or equal 
+to `400`. Other conditions that contribute to an error response can be specific per endpoint.
 
 ### Introspection Endpoint (/api/introspection)
 
-- A successful response is determined by the response having a HTTP 200 status code and the `active` JSON response
-body property must have the value `true`.
+- A successful response is determined by the response having a HTTP 200 status code and the `active` property in the 
+JSON response must exist and have the value `true`.
 
 ### Revocation Endpoint (/api/revocation)
 
