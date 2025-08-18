@@ -4,15 +4,16 @@ FROM --platform=$BUILDPLATFORM maven:3.9.9-eclipse-temurin-21 AS builder
 
 WORKDIR /build
 COPY pom.xml .
+COPY authlete-migration-support /build/authlete-migration-support
+COPY java-oauth-server-migration /build/java-oauth-server-migration
 RUN mvn -Dmaven.test.skip=true -Dmaven.javadoc.skip=true dependency:go-offline
-COPY src/ /build/src/
 RUN mvn -Dmaven.test.skip=true -Dmaven.javadoc.skip=true install
 
 
 FROM jetty:9.4.56-jre21-eclipse-temurin
 
 USER root
-COPY certs/ certs/
+COPY java-oauth-server-migration/certs/ certs/
 RUN certs/import-certificate.sh certs/Open_Banking_Brasil_Sandbox_Root_G2.pem
 USER jetty
-COPY --from=builder java-oauth-server-migration/build/target/*.war /var/lib/jetty/webapps/ROOT.war
+COPY --from=builder /build/java-oauth-server-migration/target/*.war /var/lib/jetty/webapps/ROOT.war
